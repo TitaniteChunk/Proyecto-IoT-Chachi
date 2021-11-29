@@ -1,51 +1,30 @@
-/*
- Basic ESP8266 MQTT example
- 
- Principales diferencias con el ejemplo de la librería PubSubClient:
-   Utiliza el ID del chip en setup() para:
-     - construir un identificador único para conectar con MQTT (ESP_???????)
-     - construir topics únicos para esta placa (infind/ESP_???????/+)
-   Conecta a MQTT usando usuario/contraseña (conecta_mqtt())
-   Configura el servidor MQTT para admitir mensajes hasta 512 bytes (setup())
-   En callback():
-     - copia el mensaje a una cadena de caracteres (gestión de memoria con malloc/free)
-     - comprueba el valor del topic
-   Al enviar un mensaje enciende el LED correspondiente al GPIO16
-*/
-
+//LIBRERIAS QUE SE VAN A UTILIZAR Y ACTIVACIÓN DE ADC_MODE
 #include <ESP8266WiFi.h>
 #include <ESP8266httpUpdate.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h> 
 #include <ArduinoJson.hpp> 
 #include "DHTesp.h"
-
+WiFiClient wClient;
+PubSubClient mqtt_client(wClient);
+DHTesp dht;
 ADC_MODE(ADC_VCC)
 
-// datos para actualización   >>>> SUSTITUIR IP <<<<<
-#define HTTP_OTA_ADDRESS      F("172.16.53.111")         // Address of OTA update server
+// VARIABLES GLOBALES PARA CONFIGURAR ACTUALIZACIÓN
+#define HTTP_OTA_ADDRESS      F("172.16.53.112")         // Address of OTA update server
 #define HTTP_OTA_PATH         F("/esp8266-ota/update") // Path to update firmware
 #define HTTP_OTA_PORT         1880                     // Port of update server
 #define HTTP_OTA_VERSION      String(__FILE__).substring(String(__FILE__).lastIndexOf('\\')+1) + ".nodemcu" 
 
-// funciones para progreso de OTA
-void progreso_OTA(int,int);
-void final_OTA();
-void inicio_OTA();
-void error_OTA(int);
 
-// INCLUIMOS LAS LIBRERIAS QUE SE VAN A UTILIZAR
-WiFiClient wClient;
-PubSubClient mqtt_client(wClient);
-DHTesp dht;
-// Update these with values suitable for your network.
+// VARIABLES GLOBALES PARA CONFIGURAR WIFI
 const char* ssid = "infind";
 const char* password = "1518wifi";
-const char* mqtt_server = "172.16.53.111";
+const char* mqtt_server = "172.16.53.112";
 const char* mqtt_user = "infind";
 const char* mqtt_pass = "zancudo";
 
-// cadenas para topics e ID
+// VARIABLES GLOBALES PARA CONFIGURAR MQTT
 char ID_PLACA[16];
 char topic_PUB[256];
 char topic_PUB1[256];
@@ -54,22 +33,30 @@ char topic_PUB3[256];
 char topic_PUB4[256];
 char topic_SUB[256];
 char GRUPO[16] = "GRUPO1";
+#define TAMANHO_MENSAJE 128
+unsigned long ultimo_mensaje=0;
+unsigned long ultima_recepcion=0;
 
-// GPIOs
+// VARIABLES GLOBALES PARA CONTROLAR LEDS
 int LED1 = 2;  
 int LED2 = 16;
-int valor;
-int LED_blink= 2;  
-int LED_OTA = 16; 
+int NivelLed;
+
+
+// DECLARACIÓN DE FUNCIONES PARA OTA
+void progreso_OTA(int,int);
+void final_OTA();
+void inicio_OTA();
+void error_OTA(int);
 
 //-----------------------------------------------------
 void intenta_OTA()
 { 
-  Serial.println( "------------V2------------" );  
+  Serial.println( "--------------------------" );  
   Serial.println( "Comprobando actualización:" );
   Serial.print(HTTP_OTA_ADDRESS);Serial.print(":");Serial.print(HTTP_OTA_PORT);Serial.println(HTTP_OTA_PATH);
   Serial.println( "--------------------------" );  
-  ESPhttpUpdate.setLedPin(LED_OTA, LOW);
+  ESPhttpUpdate.setLedPin(LED2, LOW);
   ESPhttpUpdate.onStart(inicio_OTA);
   ESPhttpUpdate.onError(error_OTA);
   ESPhttpUpdate.onProgress(progreso_OTA);
@@ -88,7 +75,8 @@ void intenta_OTA()
     }
 }
 
-//-----------------------------------------------------
+//·····················································
+
 void final_OTA()
 {
   Serial.println("Fin OTA. Reiniciando...");
@@ -118,6 +106,7 @@ void progreso_OTA(int x, int todo)
 }
 
 //-----------------------------------------------------
+
 void conecta_wifi() {
   Serial.printf("\nConnecting to %s:\n", ssid);
  
@@ -131,9 +120,8 @@ void conecta_wifi() {
   Serial.printf("\nWiFi connected, IP address: %s\n", WiFi.localIP().toString().c_str());
 }
 
-
-
 //-----------------------------------------------------
+
 void conecta_mqtt() {
   // Loop until we're reconnected
   while (!mqtt_client.connected()) {
@@ -151,48 +139,35 @@ void conecta_mqtt() {
   }
 }
 
-
-
-
 //-----------------------------------------------------
 
-
-//-----------------------------------------------------
 void procesa_mensaje(char* topic, byte* payload, unsigned int length) {
-  char *mensaje = (char *)malloc(length+1); // reservo memoria para copia del mensaje
-  strncpy(mensaje, (char*)payload, length); // copio el mensaje en cadena de caracteres
-  mensaje[length]='\0'; // caracter cero marca el final de la cadena
+  char *mensaje = (char *)malloc(length+1);                                 // Reservar memoria para copia del mensaje
+  strncpy(mensaje, (char*)payload, length);                                 // Copiar el mensaje en cadena de caracteres
+  mensaje[length]='\0';                                                     // Caracter cero marca el final de la cadena
   
   Serial.printf("Mensaje de LED recibido [%s] %s\n", topic, mensaje);
-
-  // compruebo el topic
-  if(strcmp(topic,"infind/GRUPO1/led/cmd")==0) 
+ 
+  if(strcmp(topic,"infind/GRUPO1/led/cmd")==0)                              // Comprobar el topic
   {
     StaticJsonDocument<512> root;
-    DeserializationError error = deserializeJson(root, mensaje,length);
-
-    // Compruebo si no hubo error
-    if (error) {
+    DeserializationError error = deserializeJson(root, mensaje,length);     // Deserializar Json y generar error en su caso
+    
+    if (error) {                                                            // Compruebo si hubo error
       Serial.print("Error deserializeJson() failed: ");
       Serial.println(error.c_str());
     }
     
     else
-    if(root.containsKey("level"))  // comprobar si existe el campo/clave que estamos buscando
+    if(root.containsKey("level"))                                           // Comprobar si existe el campo/clave que estamos buscando
     { 
-      
-     int valor = root["level"];
-     Serial.print("Mensaje OK \n");
-     
-//    led=String(mensaje).toInt();
-
-     analogWrite(LED1,(valor*(-255.0)-100.0*-255.0)*(1/100.0));    // turn the LED off by making the voltage LOW
+     Serial.print("Mensaje OK (1) \n");
+     int NivelLed = root["level"];                                          // Guardar el nivel de Led deseado (1)
+     analogWrite(LED1,(NivelLed*(-255.0)-100.0*-255.0)*(1/100.0));          // Actulizar el valor del Led (1)
     
-     Serial.print("Mensaje OK, level del 0 al 100 = ");
-     Serial.println(valor);
      StaticJsonDocument<300> estado_led;
-     estado_led["Led"] = valor;
-     SerializeComplex(topic_PUB1,estado_led);
+     estado_led["Led"] = NivelLed;
+     SerializeComplex(topic_PUB1,estado_led);                               // Serializar Json con el estado del Led (1)
 
      
     }
@@ -201,23 +176,17 @@ void procesa_mensaje(char* topic, byte* payload, unsigned int length) {
       Serial.print("Error : ");
       Serial.println("\"level\" key not found in JSON");
     }
-  } // if topic
+  } 
   else
   {
     Serial.println("Error: Topic desconocido");
   }
- 
- free(mensaje);
+free(mensaje);                                                              // Liberar la memoria del mensaje
 }
 
+//-----------------------------------------------------
 
-//-------------------------------------------------------------------------------------
-
-//.........................SERIALIZACIÓN...DE...MENSAJES..............................
-
-//-------------------------------------------------------------------------------------
-
-void SerializeComplex(char* topic, StaticJsonDocument<300> doc)
+void SerializeComplex(char* topic, StaticJsonDocument<300> doc)             // Serializar Json con datos de los sensores
 {
     char json[256];
   
@@ -225,40 +194,39 @@ void SerializeComplex(char* topic, StaticJsonDocument<300> doc)
   Serial.println(json);
 
   mqtt_client.publish(topic,json);
-  }
-
-
+}
 
 //-----------------------------------------------------
-//     SETUP
-//-----------------------------------------------------
+
 void setup() {
   char cadena[512];
   Serial.begin(115200);
   Serial.println();
   Serial.println("Empieza setup...");
   Serial.println("Status\tHumidity (%)\tTemperature (C)\t(F)\tHeatIndex (C)\t(F)");
-  pinMode(LED1, OUTPUT);    // inicializa GPIO como salida
-  digitalWrite(LED1, HIGH); // apaga el led
- 
+  pinMode(LED1, OUTPUT);                                                    // inicializa GPIO como salida
+  digitalWrite(LED1, HIGH);                                                 // apaga el led
+  dht.setup(5, DHTesp::DHT11);                                              // Inicializar conexiones de los sensores
   procesa_mensaje("infind/GRUPO1/led/cmd", (byte*)cadena, strlen(cadena));
  
-  
-  // CREACIÓN DE TOPICS
+//·····················································  
+// CREACIÓN DE TOPICS
+
   sprintf(ID_PLACA, "ESP_%d", ESP.getChipId());
   sprintf(topic_SUB, "infind/%s/led/cmd", GRUPO);
   sprintf(topic_PUB1, "infind/%s/led/status", GRUPO);    
   sprintf(topic_PUB2, "infind/%s/datos", GRUPO);
   sprintf(topic_PUB3, "infind/%s/conexion", GRUPO);  
-
-  bool wifi = WiFi.status();
   
-  conecta_wifi();
-  intenta_OTA();
-  mqtt_client.setServer(mqtt_server, 1883);
-  mqtt_client.setBufferSize(512); // para poder enviar mensajes de hasta X bytes
-  mqtt_client.setCallback(procesa_mensaje);
-  conecta_mqtt();
+//·····················································
+  
+  bool wifi = WiFi.status();
+  conecta_wifi();                                                           // Conectar al Wifi
+  intenta_OTA();                                                            // Comprobar actualizaciones
+  mqtt_client.setServer(mqtt_server, 1883);                                 // Definir credenciales del servidor MQTT
+  mqtt_client.setBufferSize(512);                                           // Ajustar tamaño de Buffer
+  mqtt_client.setCallback(procesa_mensaje);                                 // Definir función de Callback
+  conecta_mqtt();                                                           // Conectarse al servidor MQTT
   Serial.printf("Identificador placa: %s\n", ID_PLACA );
   Serial.printf("Topic publicacion  : %s\n", topic_PUB1);
   Serial.printf("Topic publicacion  : %s\n", topic_PUB2);
@@ -266,81 +234,52 @@ void setup() {
   Serial.printf("Topic subscripcion : %s\n", topic_SUB);
   Serial.printf("Termina setup en %lu ms\n\n",millis());
 
-  // Segundo topic: conexión
+//·····················································
 
 StaticJsonDocument<300> conexion;
 
-conexion["Online"]=wifi;
+conexion["Online"]=wifi;                                                    // Comprueba si se ha conectado al Wifi
 
-SerializeComplex(topic_PUB3,conexion);
+SerializeComplex(topic_PUB3,conexion);                                      // Serializar Json con información sobre la conexión
 
-
-
-  
-//--------------------------------------------------------------------------------------------------
-//                                      LECTURA DEL SENSOR
-//--------------------------------------------------------------------------------------------------
-
- dht.setup(5, DHTesp::DHT11); // Connect DHT sensor to GPIO 5
 }
 
 //-----------------------------------------------------
-#define TAMANHO_MENSAJE 128
-unsigned long ultimo_mensaje=0;
-unsigned long ultima_recepcion=0;
 
-
-//--------------------------------------------------------------------------------------------------
-//                                          LOOP
-//--------------------------------------------------------------------------------------------------
 void loop() {
-<<<<<<< HEAD
-  if (!mqtt_client.connected()) conecta_mqtt();
-  mqtt_client.loop(); // esta llamada para que la librería recupere el control
-  unsigned long ahora = millis();
-  if (ahora - ultimo_mensaje >= 30000) {
 
- delay(dht.getMinimumSamplingPeriod());
+  if (!mqtt_client.connected()) conecta_mqtt();                             // Comprobar conexión al servidor MQTT, y realizarla en caso negativo
+  mqtt_client.loop();                                                       // La librería MQTT recupera el control
+  unsigned long ahora = millis();                                           // Temporización para el envío de mensajes
+  if (ahora - ultimo_mensaje >= 30000) 
+  {
+    delay(dht.getMinimumSamplingPeriod());                                  // Delay para no sobrecargar los sensores
 
-  float hum = dht.getHumidity();
-  char cadena[512];
-  float temp = dht.getTemperature();
-  unsigned volt = ESP.getVcc()/1000;     //Lectura del nivel del voltaje en milivoltios
-  int led;
-  bool wifi = WiFi.status();
-  float uptime;
-  long rssi_ = WiFi.RSSI();
-  String  IP = WiFi.localIP().toString().c_str();
-    ultimo_mensaje = ahora;
-
-    int tiempo = millis();
-
-
-
-// Primer topic: datos
-
-StaticJsonDocument<300> datos;
-datos["Uptime"] = tiempo;
-datos["Vcc"] = volt;
-
-JsonObject DTH11 = datos.createNestedObject("DTH11");
-DTH11["Temperatura"] = temp;
-DTH11["Humedad"] = hum;
-
-JsonObject Wifi = datos.createNestedObject("Wifi");
-Wifi["SSId"] = ssid;
-Wifi["IP"] = IP;
-Wifi["RSSI"] = rssi_;
-
-SerializeComplex(topic_PUB2,datos);
-
-    
-
-  }
+    float hum = dht.getHumidity();                                          // Lectura de la humedad
+    float temp = dht.getTemperature();                                      // Lectura de la temperatura
+    unsigned volt = ESP.getVcc()/1000;                                      // Lectura del nivel del voltaje en milivoltios
+    bool wifi = WiFi.status();                                              // Comprueba conexión
+    long rssi_ = WiFi.RSSI();                                               // Comprueba RSSI
+    String  IP = WiFi.localIP().toString().c_str();                         // Guarda IP
+    int tiempo = millis();                                                  // Guarda momento de la lecura
   
-=======
-  // put your main code here, to run repeatedly:
-  //hola wena
->>>>>>> 97758f912f9514c2c33d4c838d51b928a8fe00e5
+    ultimo_mensaje = ahora;                                                 // Actualizar instancia del último mensaje
+    
+//·····················································
 
+    StaticJsonDocument<300> datos;                                          // Construir Json con los datos de los sensores
+    datos["Uptime"] = tiempo;
+    datos["Vcc"] = volt;
+
+    JsonObject DTH11 = datos.createNestedObject("DTH11");
+    DTH11["Temperatura"] = temp;
+    DTH11["Humedad"] = hum;
+
+    JsonObject Wifi = datos.createNestedObject("Wifi");
+    Wifi["SSId"] = ssid;
+    Wifi["IP"] = IP;
+    Wifi["RSSI"] = rssi_;
+
+    SerializeComplex(topic_PUB2,datos);
+  }
 }
