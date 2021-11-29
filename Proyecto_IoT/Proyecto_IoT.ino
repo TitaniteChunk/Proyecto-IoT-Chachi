@@ -294,6 +294,7 @@ unsigned long ultima_recepcion=0;
 //                                          LOOP
 //--------------------------------------------------------------------------------------------------
 void loop() {
+<<<<<<< HEAD
   if (!mqtt_client.connected()) conecta_mqtt();
   mqtt_client.loop(); // esta llamada para que la librería recupere el control
   unsigned long ahora = millis();
@@ -337,5 +338,9 @@ SerializeComplex(topic_PUB2,datos);
 
   }
   
+=======
+  // put your main code here, to run repeatedly:
+  //hola wena
+>>>>>>> 97758f912f9514c2c33d4c838d51b928a8fe00e5
 
 }
