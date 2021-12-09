@@ -11,16 +11,16 @@ DHTesp dht;
 ADC_MODE(ADC_VCC)
 
 // VARIABLES GLOBALES PARA CONFIGURAR ACTUALIZACIÓN
-#define HTTP_OTA_ADDRESS      F("172.16.53.112")         // Address of OTA update server
-#define HTTP_OTA_PATH         F("/esp8266-ota/update") // Path to update firmware
-#define HTTP_OTA_PORT         1880                     // Port of update server
+#define HTTP_OTA_ADDRESS      F("172.16.53.112")          // Address of OTA update server
+#define HTTP_OTA_PATH         F("/esp8266-ota/update")    // Path to update firmware
+#define HTTP_OTA_PORT         1880                        // Port of update server
 #define HTTP_OTA_VERSION      String(__FILE__).substring(String(__FILE__).lastIndexOf('\\')+1) + ".nodemcu" 
 
 
 // VARIABLES GLOBALES PARA CONFIGURAR WIFI
 const char* ssid = "infind";
 const char* password = "1518wifi";
-const char* mqtt_server = "172.16.53.112";
+const char* mqtt_server = "iot.ac.uma.es:1883";
 const char* mqtt_user = "infind";
 const char* mqtt_pass = "zancudo";
 
@@ -37,17 +37,32 @@ char GRUPO[16] = "GRUPO1";
 unsigned long ultimo_mensaje=0;
 unsigned long ultima_recepcion=0;
 
-// VARIABLES GLOBALES PARA CONTROLAR LEDS
+// VARIABLES GLOBALES PARA CONTROLAR LEDS Y BOTÓN
 int LED1 = 2;  
 int LED2 = 16;
 int NivelLed;
 
+int boton_flash=0;                                  // GPIO0 = boton flash
+int estado_polling=HIGH;                            // por defecto HIGH (PULLUP). Cuando se pulsa se pone a LOW
+int estado_int=HIGH;                                // por defecto HIGH (PULLUP). Cuando se pulsa se pone a LOW
+int pulsacion;
+int pulso1 = 0;
+int pulso2;
+
+unsigned long inicio_pulso_polling = 0;
+unsigned long ultima_int = 0;
+volatile int lectura;
+int lectura2;
+volatile unsigned long ahora;
+volatile unsigned long temp;
 
 // DECLARACIÓN DE FUNCIONES PARA OTA
 void progreso_OTA(int,int);
 void final_OTA();
 void inicio_OTA();
 void error_OTA(int);
+
+
 
 //-----------------------------------------------------
 void intenta_OTA()
@@ -128,9 +143,13 @@ void conecta_mqtt() {
     Serial.print("Attempting MQTT connection...");
     // Attempt to connect
     //(ID_PLACA, mqtt_user, mqtt_pass)) 
-    if (mqtt_client.connect(ID_PLACA, mqtt_user, mqtt_pass, topic_PUB3, '1', true, "{\"online\":false}", true)) {
+    if (mqtt_client.connect(ID_PLACA, mqtt_user, mqtt_pass, topic_P_conexion, '1', true, "{\"online\":false}", true)) {
       Serial.printf(" conectado a broker: %s\n",mqtt_server);
-      mqtt_client.subscribe(topic_SUB);
+      mqtt_client.subscribe(topic_S_config);
+      mqtt_client.subscribe(topic_S_ledcmd);
+      mqtt_client.subscribe(topic_S_switchcmd);
+      mqtt_client.subscribe(topic_S_FOTA);
+      
     } else {
       Serial.printf("failed, rc=%d  try again in 5s\n", mqtt_client.state());
       // Wait 5 seconds before retrying
@@ -199,6 +218,10 @@ void SerializeComplex(char* topic, StaticJsonDocument<300> doc)             // S
 //-----------------------------------------------------
 
 void setup() {
+  
+  pinMode(boton_flash, INPUT_PULLUP);                                       // Parte dedicada al botón
+  attachInterrupt(digitalPinToInterrupt(boton_flash), RTI, CHANGE);
+  
   char cadena[512];
   Serial.begin(115200);
   Serial.println();
@@ -216,8 +239,19 @@ void setup() {
   sprintf(topic_SUB, "infind/%s/led/cmd", GRUPO);
   sprintf(topic_PUB1, "infind/%s/led/status", GRUPO);    
   sprintf(topic_PUB2, "infind/%s/datos", GRUPO);
-  sprintf(topic_PUB3, "infind/%s/conexion", GRUPO);  
+  sprintf(topic_PUB3, "infind/%s/conexion", GRUPO);
   
+  sprintf(topic_P_conexion, "II%s/ESP_%d/conexion", GRUPO, ESP.getChipId())
+  sprintf(topic_P_datos, "II%s/ESP_%d/datos", GRUPO, ESP.getChipId())
+  sprintf(topic_P_ledstatus, "II%s/ESP_%d/led/status", GRUPO, ESP.getChipId())
+  sprintf(topic_P_switchstatus, "II%s/ESP_%d/switch/status", GRUPO, ESP.getChipId())
+  
+  sprintf(topic_S_config, "II%s/ESP_%d/config", GRUPO, ESP.getChipId())
+  sprintf(topic_S_ledcmd, "II%s/ESP_%d/led/cmd", GRUPO, ESP.getChipId())
+  sprintf(topic_S_switchcmd, "II%s/ESP_%d/swich/cmd", GRUPO, ESP.getChipId())   
+  sprintf(topic_S_FOTA, "II%s/ESP_%d/FOTA", GRUPO, ESP.getChipId()) 
+
+
 //·····················································
   
   bool wifi = WiFi.status();
@@ -246,8 +280,45 @@ SerializeComplex(topic_PUB3,conexion);                                      // S
 
 //-----------------------------------------------------
 
+ICACHE_RAM_ATTR void RTI() {                                                // Manejo de la interrupción del botón
+  lectura=digitalRead(boton_flash);
+  ahora= millis();
+  // descomentar para eliminar rebotes
+  if(lectura==estado_int || ahora-ultima_int<50) return; // filtro rebotes 50ms
+  if(lectura==LOW)
+  { 
+   estado_int=LOW;
+   pulso2 = pulso1;
+   pulso1 = millis();
+  }
+  else
+  {
+   estado_int=HIGH;
+  }
+  ultima_int = ahora;
+}
+
+//-----------------------------------------------------
+
 void loop() {
 
+  if(lectura!=lectura2){
+    lectura2 = lectura;
+      if(lectura==LOW)
+        { 
+          Serial.print("Int en: ");
+          Serial.println(ahora);
+          temp = ahora;
+        }
+      else
+        {
+        Serial.print("Int dura: ");
+        if(ultima_int-temp)<1000{pulsacion = '1'};
+        if(pulso1-pulso2)<800{pulsacion = '2'};
+        if(ultima_int-temp)>1000{pulsacion = '3'};
+        }
+  }
+  
   if (!mqtt_client.connected()) conecta_mqtt();                             // Comprobar conexión al servidor MQTT, y realizarla en caso negativo
   mqtt_client.loop();                                                       // La librería MQTT recupera el control
   unsigned long ahora = millis();                                           // Temporización para el envío de mensajes
