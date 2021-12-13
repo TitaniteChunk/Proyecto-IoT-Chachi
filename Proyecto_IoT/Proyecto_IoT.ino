@@ -20,7 +20,7 @@ ADC_MODE(ADC_VCC)
 // VARIABLES GLOBALES PARA CONFIGURAR WIFI
 const char* ssid = "infind";
 const char* password = "1518wifi";
-const char* mqtt_server = "iot.ac.uma.es:1883";
+const char* mqtt_server = "iot.ac.uma.es";
 const char* mqtt_user = "infind";
 const char* mqtt_pass = "zancudo";
 
@@ -92,6 +92,7 @@ void intenta_OTA()
       Serial.println(F(" OK"));
       break;
     }
+pulsacion = 1;
 }
 
 //·····················································
@@ -185,12 +186,12 @@ void procesa_mensaje(char* topic, byte* payload, unsigned int length) {
     if(root.containsKey("level"))                                           // Comprobar si existe el campo/clave que estamos buscando
     { 
      Serial.print("Mensaje OK (1) \n");
-     NivelLed = root["level"];                                          // Guardar el nivel de Led deseado (1)
+     NivelLed = root["level"];                                              // Guardar el nivel de Led deseado (1)
 
     
      StaticJsonDocument<300> estado_led;
      estado_led["Led"] = NivelLed;
-     SerializeComplex(topic_P_ledstatus,estado_led);                               // Serializar Json con el estado del Led (1)
+     SerializeComplex(topic_P_ledstatus,estado_led);                        // Serializar Json con el estado del Led (1)
 
      
     }
@@ -312,16 +313,16 @@ void loop() {
     lectura2 = lectura;
       if(lectura==LOW)
         { 
-          Serial.print("Int en: ");
-          Serial.println(ahora);
           temp = ahora;
         }
       else
         {
         Serial.print("Int dura: ");
+        Serial.println(ultima_int-temp);
         if((ultima_int-temp)<1000){pulsacion = '1';};                       // Se ha pulsado el botón
         if((pulso1-pulso2)<800){pulsacion = '2';};                          // La pulsación es doble
         if((ultima_int-temp)>1000){pulsacion = '3';};                       // La pulsación es prolongada
+        Serial.println(pulsacion);
         }
   }
 
