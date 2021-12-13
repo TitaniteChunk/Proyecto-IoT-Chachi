@@ -26,12 +26,16 @@ const char* mqtt_pass = "zancudo";
 
 // VARIABLES GLOBALES PARA CONFIGURAR MQTT
 char ID_PLACA[16];
-char topic_PUB[256];
-char topic_PUB1[256];
-char topic_PUB2[256];
-char topic_PUB3[256];
-char topic_PUB4[256];
-char topic_SUB[256];
+
+char topic_P_conexion[256];
+char topic_P_datos[256];
+char topic_P_ledstatus[256];
+char topic_P_switchstatus[256];
+char topic_S_config[256];
+char topic_S_ledcmd[256];
+char topic_S_switchcmd[256];
+char topic_S_FOTA[256];
+
 char GRUPO[16] = "GRUPO1";
 #define TAMANHO_MENSAJE 128
 unsigned long ultimo_mensaje=0;
@@ -45,7 +49,7 @@ int NivelLed;
 int boton_flash=0;                                  // GPIO0 = boton flash
 int estado_polling=HIGH;                            // por defecto HIGH (PULLUP). Cuando se pulsa se pone a LOW
 int estado_int=HIGH;                                // por defecto HIGH (PULLUP). Cuando se pulsa se pone a LOW
-int pulsacion;
+int pulsacion = 1;
 int pulso1 = 0;
 int pulso2;
 
@@ -181,12 +185,12 @@ void procesa_mensaje(char* topic, byte* payload, unsigned int length) {
     if(root.containsKey("level"))                                           // Comprobar si existe el campo/clave que estamos buscando
     { 
      Serial.print("Mensaje OK (1) \n");
-     int NivelLed = root["level"];                                          // Guardar el nivel de Led deseado (1)
-     analogWrite(LED1,(NivelLed*(-255.0)-100.0*-255.0)*(1/100.0));          // Actulizar el valor del Led (1)
+     NivelLed = root["level"];                                          // Guardar el nivel de Led deseado (1)
+
     
      StaticJsonDocument<300> estado_led;
      estado_led["Led"] = NivelLed;
-     SerializeComplex(topic_PUB1,estado_led);                               // Serializar Json con el estado del Led (1)
+     SerializeComplex(topic_P_ledstatus,estado_led);                               // Serializar Json con el estado del Led (1)
 
      
     }
@@ -236,20 +240,16 @@ void setup() {
 // CREACIÓN DE TOPICS
 
   sprintf(ID_PLACA, "ESP_%d", ESP.getChipId());
-  sprintf(topic_SUB, "infind/%s/led/cmd", GRUPO);
-  sprintf(topic_PUB1, "infind/%s/led/status", GRUPO);    
-  sprintf(topic_PUB2, "infind/%s/datos", GRUPO);
-  sprintf(topic_PUB3, "infind/%s/conexion", GRUPO);
+
+  sprintf(topic_P_conexion, "II%s/ESP_%d/conexion", GRUPO, ESP.getChipId());
+  sprintf(topic_P_datos, "II%s/ESP_%d/datos", GRUPO, ESP.getChipId());
+  sprintf(topic_P_ledstatus, "II%s/ESP_%d/led/status", GRUPO, ESP.getChipId());
+  sprintf(topic_P_switchstatus, "II%s/ESP_%d/switch/status", GRUPO, ESP.getChipId());
   
-  sprintf(topic_P_conexion, "II%s/ESP_%d/conexion", GRUPO, ESP.getChipId())
-  sprintf(topic_P_datos, "II%s/ESP_%d/datos", GRUPO, ESP.getChipId())
-  sprintf(topic_P_ledstatus, "II%s/ESP_%d/led/status", GRUPO, ESP.getChipId())
-  sprintf(topic_P_switchstatus, "II%s/ESP_%d/switch/status", GRUPO, ESP.getChipId())
-  
-  sprintf(topic_S_config, "II%s/ESP_%d/config", GRUPO, ESP.getChipId())
-  sprintf(topic_S_ledcmd, "II%s/ESP_%d/led/cmd", GRUPO, ESP.getChipId())
-  sprintf(topic_S_switchcmd, "II%s/ESP_%d/swich/cmd", GRUPO, ESP.getChipId())   
-  sprintf(topic_S_FOTA, "II%s/ESP_%d/FOTA", GRUPO, ESP.getChipId()) 
+  sprintf(topic_S_config, "II%s/ESP_%d/config", GRUPO, ESP.getChipId());
+  sprintf(topic_S_ledcmd, "II%s/ESP_%d/led/cmd", GRUPO, ESP.getChipId());
+  sprintf(topic_S_switchcmd, "II%s/ESP_%d/swich/cmd", GRUPO, ESP.getChipId());   
+  sprintf(topic_S_FOTA, "II%s/ESP_%d/FOTA", GRUPO, ESP.getChipId()); 
 
 
 //·····················································
@@ -262,10 +262,16 @@ void setup() {
   mqtt_client.setCallback(procesa_mensaje);                                 // Definir función de Callback
   conecta_mqtt();                                                           // Conectarse al servidor MQTT
   Serial.printf("Identificador placa: %s\n", ID_PLACA );
-  Serial.printf("Topic publicacion  : %s\n", topic_PUB1);
-  Serial.printf("Topic publicacion  : %s\n", topic_PUB2);
-  Serial.printf("Topic publicacion  : %s\n", topic_PUB3);
-  Serial.printf("Topic subscripcion : %s\n", topic_SUB);
+  Serial.printf("Topic publicacion  : %s\n", topic_P_conexion);
+  Serial.printf("Topic publicacion  : %s\n", topic_P_datos);
+  Serial.printf("Topic publicacion  : %s\n", topic_P_ledstatus);
+  Serial.printf("Topic publicacion  : %s\n", topic_P_switchstatus);
+  
+  Serial.printf("Topic subscripcion : %s\n", topic_S_config);
+  Serial.printf("Topic subscripcion : %s\n", topic_S_ledcmd);
+  Serial.printf("Topic subscripcion : %s\n", topic_S_switchcmd);
+  Serial.printf("Topic subscripcion : %s\n", topic_S_FOTA);
+  
   Serial.printf("Termina setup en %lu ms\n\n",millis());
 
 //·····················································
@@ -274,7 +280,7 @@ StaticJsonDocument<300> conexion;
 
 conexion["Online"]=wifi;                                                    // Comprueba si se ha conectado al Wifi
 
-SerializeComplex(topic_PUB3,conexion);                                      // Serializar Json con información sobre la conexión
+SerializeComplex(topic_P_conexion,conexion);                                // Serializar Json con información sobre la conexión
 
 }
 
@@ -313,11 +319,15 @@ void loop() {
       else
         {
         Serial.print("Int dura: ");
-        if(ultima_int-temp)<1000{pulsacion = '1'};
-        if(pulso1-pulso2)<800{pulsacion = '2'};
-        if(ultima_int-temp)>1000{pulsacion = '3'};
+        if((ultima_int-temp)<1000){pulsacion = '1';};                       // Se ha pulsado el botón
+        if((pulso1-pulso2)<800){pulsacion = '2';};                          // La pulsación es doble
+        if((ultima_int-temp)>1000){pulsacion = '3';};                       // La pulsación es prolongada
         }
   }
+
+  if(pulsacion == '1'){analogWrite(LED1,(NivelLed*(-255.0)-100.0*-255.0)*(1/100.0));}
+    else if (pulsacion == '2'){analogWrite(LED1,0);}                       // Si la pulsación es doble poner el Led1 al máximo (0)
+    else if (pulsacion == '3'){intenta_OTA();}                             // Si la pulsación es prolongada comprobar actualización
   
   if (!mqtt_client.connected()) conecta_mqtt();                             // Comprobar conexión al servidor MQTT, y realizarla en caso negativo
   mqtt_client.loop();                                                       // La librería MQTT recupera el control
@@ -351,6 +361,6 @@ void loop() {
     Wifi["IP"] = IP;
     Wifi["RSSI"] = rssi_;
 
-    SerializeComplex(topic_PUB2,datos);
+    SerializeComplex(topic_P_datos,datos);
   }
 }
