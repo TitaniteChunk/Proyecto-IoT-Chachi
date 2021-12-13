@@ -289,20 +289,22 @@ SerializeComplex(topic_P_conexion,conexion);                                // S
 
 ICACHE_RAM_ATTR void RTI() {                                                // Manejo de la interrupción del botón
   lectura=digitalRead(boton_flash);
-  ahora= millis();
+  ahora = millis();
   // descomentar para eliminar rebotes
-  if(lectura==estado_int || ahora-ultima_int<50) return; // filtro rebotes 50ms
+  if(lectura==estado_int || ahora-ultima_int<50) return;                    // filtro rebotes 50ms
   if(lectura==LOW)
   { 
    estado_int=LOW;
    pulso2 = pulso1;
-   pulso1 = millis();
+   pulso1 = ahora;
   }
   else
   {
    estado_int=HIGH;
   }
-  ultima_int = ahora;
+
+ultima_int = ahora;
+
 }
 
 //-----------------------------------------------------
@@ -313,22 +315,22 @@ void loop() {
     lectura2 = lectura;
       if(lectura==LOW)
         { 
-          temp = ahora;
+          
         }
       else
         {
         Serial.print("Int dura: ");
-        Serial.println(ultima_int-temp);
-        if((ultima_int-temp)<1000){pulsacion = '1';};                       // Se ha pulsado el botón
-        if((pulso1-pulso2)<800){pulsacion = '2';};                          // La pulsación es doble
-        if((ultima_int-temp)>1000){pulsacion = '3';};                       // La pulsación es prolongada
-        Serial.println(pulsacion);
+        Serial.println(ultima_int-pulso1);
+        if((ultima_int-pulso1)>1000){pulsacion = 1;};                           // Se ha pulsado el botón
+        if((pulso1-pulso2)<400){pulsacion = 2;};                           // La pulsación es doble
+        if((ultima_int-pulso1)>1000){pulsacion = 3;};                      // La pulsación es prolongada
+        Serial.print(pulsacion);
         }
   }
 
-  if(pulsacion == '1'){analogWrite(LED1,(NivelLed*(-255.0)-100.0*-255.0)*(1/100.0));}
-    else if (pulsacion == '2'){analogWrite(LED1,0);}                       // Si la pulsación es doble poner el Led1 al máximo (0)
-    else if (pulsacion == '3'){intenta_OTA();}                             // Si la pulsación es prolongada comprobar actualización
+  if(pulsacion == 1){analogWrite(LED1,(NivelLed*(-255.0)-100.0*-255.0)*(1/100.0));}
+    else if (pulsacion == 2){analogWrite(LED1,0);}                         // Si la pulsación es doble poner el Led1 al máximo (0)
+    else if (pulsacion == 3){intenta_OTA();}                               // Si la pulsación es prolongada comprobar actualización
   
   if (!mqtt_client.connected()) conecta_mqtt();                             // Comprobar conexión al servidor MQTT, y realizarla en caso negativo
   mqtt_client.loop();                                                       // La librería MQTT recupera el control
