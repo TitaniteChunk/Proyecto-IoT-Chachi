@@ -25,7 +25,6 @@ const char* mqtt_user = "infind";
 const char* mqtt_pass = "zancudo";
 
 // VARIABLES GLOBALES PARA CONFIGURAR MQTT
-char ID_PLACA[16];
 
 char topic_P_conexion[256];
 char topic_P_datos[256];
@@ -36,15 +35,35 @@ char topic_S_ledcmd[256];
 char topic_S_switchcmd[256];
 char topic_S_FOTA[256];
 
-char GRUPO[16] = "GRUPO1";
+char GRUPO[16] = "1";
 #define TAMANHO_MENSAJE 128
 unsigned long ultimo_mensaje=0;
 unsigned long ultima_recepcion=0;
 
+// VARIABLES GLOBALES PARA ALMACENAR VARIABLES MQTT
+
+char CHIPID[16];
+bool online = true;
+
+int Uptime;
+int Vcc;
+float temp;
+float hum;
+int LED;
+int SWITCH;
+char SSId;
+char IP;
+int RSSi;
+int envia;
+int actualiza;
+int velocidad;
+char origen;
+
+
 // VARIABLES GLOBALES PARA CONTROLAR LEDS Y BOTÓN
 int LED1 = 2;  
 int LED2 = 16;
-int NivelLed;
+int LED;
 
 int boton_flash=0;                                  // GPIO0 = boton flash
 int estado_polling=HIGH;                            // por defecto HIGH (PULLUP). Cuando se pulsa se pone a LOW
@@ -147,8 +166,8 @@ void conecta_mqtt() {
   while (!mqtt_client.connected()) {
     Serial.print("Attempting MQTT connection...");
     // Attempt to connect
-    //(ID_PLACA, mqtt_user, mqtt_pass)) 
-    if (mqtt_client.connect(ID_PLACA, mqtt_user, mqtt_pass, topic_P_conexion, '1', true, "{\"online\":false}", true)) {
+    //(CHIPID, mqtt_user, mqtt_pass)) 
+    if (mqtt_client.connect(CHIPID, mqtt_user, mqtt_pass, topic_P_conexion, '1', true, "{\"online\":false}", true)) {
       Serial.printf(" conectado a broker: %s\n",mqtt_server);
       mqtt_client.subscribe(topic_S_config);
       mqtt_client.subscribe(topic_S_ledcmd);
@@ -186,11 +205,11 @@ void procesa_mensaje(char* topic, byte* payload, unsigned int length) {
     if(root.containsKey("level"))                                           // Comprobar si existe el campo/clave que estamos buscando
     { 
      Serial.print("Mensaje OK (1) \n");
-     NivelLed = root["level"];                                              // Guardar el nivel de Led deseado (1)
+     LED = root["level"];                                                   // Guardar el nivel de Led deseado (1)
 
     
      StaticJsonDocument<300> estado_led;
-     estado_led["Led"] = NivelLed;
+     estado_led["Led"] = LED;
      SerializeComplex(topic_P_ledstatus,estado_led);                        // Serializar Json con el estado del Led (1)
 
      
@@ -202,8 +221,42 @@ void procesa_mensaje(char* topic, byte* payload, unsigned int length) {
     }
   } 
   else
+
+  if(strcmp(topic,topic_S_config)==0)
+  {
+    if(root.containsKey("envia"))                                            // Comprobar si existe el campo/clave "envia"
+    { 
+      if(strcmp(root["envia"],"null")==0){}                                  // Comprobar que el contenido del mensaje no sea "null"
+      else {envia = root["envia"];} 
+    }
+//·····················································    
+    if(root.containsKey("actualiza"))                                        // Comprobar si existe el campo/clave "actualiza"
+    { 
+      if(strcmp(root["actualiza"],"null")==0){}                              // Comprobar que el contenido del mensaje no sea "null"
+      else {actualiza = root["actualiza"];} 
+    }
+//·····················································    
+    if(root.containsKey("velocidad"))                                        // Comprobar si existe el campo/clave "velocidad"
+    { 
+      if(strcmp(root["velocidad"],"null")==0){}                              // Comprobar que el contenido del mensaje no sea "null"
+      else {velocidad = root["velocidad"];} 
+    }
+//·····················································
+    if(root.containsKey("LED"))                                              // Comprobar si existe el campo/clave "LED"
+    { 
+      if(strcmp(root["LED"],"null")==0){}                                    // Comprobar que el contenido del mensaje no sea "null"
+      else {LED = root["LED"];} 
+    }
+//·····················································
+    if(root.containsKey("SWITCH"))                                           // Comprobar si existe el campo/clave "SWITCH"
+    { 
+      if(strcmp(root["SWITCH"],"null")==0){}                                 // Comprobar que el contenido del mensaje no sea "null"
+      else {SWITCH = root["SWITCH"];} 
+    }
+  else
   {
     Serial.println("Error: Topic desconocido");
+  }
   }
 free(mensaje);                                                              // Liberar la memoria del mensaje
 }
@@ -240,7 +293,7 @@ void setup() {
 //·····················································  
 // CREACIÓN DE TOPICS
 
-  sprintf(ID_PLACA, "ESP_%d", ESP.getChipId());
+  sprintf(CHIPID, "ESP_%d", ESP.getChipId());
 
   sprintf(topic_P_conexion, "II%s/ESP_%d/conexion", GRUPO, ESP.getChipId());
   sprintf(topic_P_datos, "II%s/ESP_%d/datos", GRUPO, ESP.getChipId());
@@ -262,7 +315,7 @@ void setup() {
   mqtt_client.setBufferSize(512);                                           // Ajustar tamaño de Buffer
   mqtt_client.setCallback(procesa_mensaje);                                 // Definir función de Callback
   conecta_mqtt();                                                           // Conectarse al servidor MQTT
-  Serial.printf("Identificador placa: %s\n", ID_PLACA );
+  Serial.printf("Identificador placa: %s\n", CHIPID );
   Serial.printf("Topic publicacion  : %s\n", topic_P_conexion);
   Serial.printf("Topic publicacion  : %s\n", topic_P_datos);
   Serial.printf("Topic publicacion  : %s\n", topic_P_ledstatus);
@@ -321,14 +374,14 @@ void loop() {
         {
         Serial.print("Int dura: ");
         Serial.println(ultima_int-pulso1);
-        if((ultima_int-pulso1)>1000){pulsacion = 1;};                           // Se ha pulsado el botón
+        if((ultima_int-pulso1)<1000){pulsacion = 1;};                      // Se ha pulsado el botón
         if((pulso1-pulso2)<400){pulsacion = 2;};                           // La pulsación es doble
         if((ultima_int-pulso1)>1000){pulsacion = 3;};                      // La pulsación es prolongada
         Serial.print(pulsacion);
         }
   }
 
-  if(pulsacion == 1){analogWrite(LED1,(NivelLed*(-255.0)-100.0*-255.0)*(1/100.0));}
+  if(pulsacion == 1){analogWrite(LED1,(LED*(-255.0)-100.0*-255.0)*(1/100.0));}
     else if (pulsacion == 2){analogWrite(LED1,0);}                         // Si la pulsación es doble poner el Led1 al máximo (0)
     else if (pulsacion == 3){intenta_OTA();}                               // Si la pulsación es prolongada comprobar actualización
   
