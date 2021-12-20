@@ -17,7 +17,9 @@ ADC_MODE(ADC_VCC)
 #define HTTP_OTA_VERSION      String(__FILE__).substring(String(__FILE__).lastIndexOf('\\')+1) + ".nodemcu" 
 
 
+
 // VARIABLES GLOBALES PARA CONFIGURAR WIFI
+
 const char* ssid = "infind";
 const char* password = "1518wifi";
 const char* mqtt_server = "iot.ac.uma.es";
@@ -42,13 +44,13 @@ unsigned long ultima_recepcion=0;
 
 // VARIABLES GLOBALES PARA ALMACENAR VARIABLES MQTT
 
-char CHIPID[16];
+char CHIP_ID[16];
 bool online = true;
 
 int Uptime;
 int Vcc;
-float temp;
-float hum;
+float temperatura;
+float humedad;
 int LED;
 int SWITCH;
 char SSId;
@@ -63,7 +65,6 @@ char origen;
 // VARIABLES GLOBALES PARA CONTROLAR LEDS Y BOTÓN
 int LED1 = 2;  
 int LED2 = 16;
-int LED;
 
 int boton_flash=0;                                  // GPIO0 = boton flash
 int estado_polling=HIGH;                            // por defecto HIGH (PULLUP). Cuando se pulsa se pone a LOW
@@ -159,6 +160,16 @@ void conecta_wifi() {
   Serial.printf("\nWiFi connected, IP address: %s\n", WiFi.localIP().toString().c_str());
 }
 
+void setup()
+{
+
+}
+
+void loop()
+{
+
+}
+/*
 //-----------------------------------------------------
 
 void conecta_mqtt() {
@@ -188,20 +199,19 @@ void procesa_mensaje(char* topic, byte* payload, unsigned int length) {
   char *mensaje = (char *)malloc(length+1);                                 // Reservar memoria para copia del mensaje
   strncpy(mensaje, (char*)payload, length);                                 // Copiar el mensaje en cadena de caracteres
   mensaje[length]='\0';                                                     // Caracter cero marca el final de la cadena
+
+  StaticJsonDocument<512> root;
+  DeserializationError error = deserializeJson(root, mensaje,length);     // Deserializar Json y generar error en su caso
+
+  if (error) {                                                            // Compruebo si hubo error
+    Serial.print("Error deserializeJson() failed: ");
+    Serial.println(error.c_str());
+  }
   
   Serial.printf("Mensaje de LED recibido [%s] %s\n", topic, mensaje);
  
   if(strcmp(topic,"infind/GRUPO1/led/cmd")==0)                              // Comprobar el topic
   {
-    StaticJsonDocument<512> root;
-    DeserializationError error = deserializeJson(root, mensaje,length);     // Deserializar Json y generar error en su caso
-    
-    if (error) {                                                            // Compruebo si hubo error
-      Serial.print("Error deserializeJson() failed: ");
-      Serial.println(error.c_str());
-    }
-    
-    else
     if(root.containsKey("level"))                                           // Comprobar si existe el campo/clave que estamos buscando
     { 
      Serial.print("Mensaje OK (1) \n");
@@ -221,7 +231,7 @@ void procesa_mensaje(char* topic, byte* payload, unsigned int length) {
     }
   } 
   else
-
+//····················································· 
   if(strcmp(topic,topic_S_config)==0)
   {
     if(root.containsKey("envia"))                                            // Comprobar si existe el campo/clave "envia"
@@ -419,4 +429,4 @@ void loop() {
 
     SerializeComplex(topic_P_datos,datos);
   }
-}
+}*/
