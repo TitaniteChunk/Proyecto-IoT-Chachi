@@ -53,13 +53,13 @@ float temperatura;
 float humedad;
 int LED;
 int SWITCH;
-char SSId;
-char IP;
+char SSId[16];
+char IP[16];
 int RSSi;
 int envia;
 int actualiza;
 int velocidad;
-char origen;
+char origen[16] = "MQTT";
 
 
 // VARIABLES GLOBALES PARA CONTROLAR LEDS Y BOTÓN
@@ -160,16 +160,6 @@ void conecta_wifi() {
   Serial.printf("\nWiFi connected, IP address: %s\n", WiFi.localIP().toString().c_str());
 }
 
-void setup()
-{
-
-}
-
-void loop()
-{
-
-}
-/*
 //-----------------------------------------------------
 
 void conecta_mqtt() {
@@ -178,7 +168,7 @@ void conecta_mqtt() {
     Serial.print("Attempting MQTT connection...");
     // Attempt to connect
     //(CHIPID, mqtt_user, mqtt_pass)) 
-    if (mqtt_client.connect(CHIPID, mqtt_user, mqtt_pass, topic_P_conexion, '1', true, "{\"online\":false}", true)) {
+    if (mqtt_client.connect(CHIP_ID, mqtt_user, mqtt_pass, topic_P_conexion, '1', true, "{\"online\":false}", true)) {
       Serial.printf(" conectado a broker: %s\n",mqtt_server);
       mqtt_client.subscribe(topic_S_config);
       mqtt_client.subscribe(topic_S_ledcmd);
@@ -239,25 +229,25 @@ void procesa_mensaje(char* topic, byte* payload, unsigned int length) {
       if(strcmp(root["envia"],"null")==0){}                                  // Comprobar que el contenido del mensaje no sea "null"
       else {envia = root["envia"];} 
     }
-//·····················································    
+   
     if(root.containsKey("actualiza"))                                        // Comprobar si existe el campo/clave "actualiza"
     { 
       if(strcmp(root["actualiza"],"null")==0){}                              // Comprobar que el contenido del mensaje no sea "null"
       else {actualiza = root["actualiza"];} 
     }
-//·····················································    
+ 
     if(root.containsKey("velocidad"))                                        // Comprobar si existe el campo/clave "velocidad"
     { 
       if(strcmp(root["velocidad"],"null")==0){}                              // Comprobar que el contenido del mensaje no sea "null"
       else {velocidad = root["velocidad"];} 
     }
-//·····················································
+
     if(root.containsKey("LED"))                                              // Comprobar si existe el campo/clave "LED"
     { 
       if(strcmp(root["LED"],"null")==0){}                                    // Comprobar que el contenido del mensaje no sea "null"
       else {LED = root["LED"];} 
     }
-//·····················································
+
     if(root.containsKey("SWITCH"))                                           // Comprobar si existe el campo/clave "SWITCH"
     { 
       if(strcmp(root["SWITCH"],"null")==0){}                                 // Comprobar que el contenido del mensaje no sea "null"
@@ -303,7 +293,7 @@ void setup() {
 //·····················································  
 // CREACIÓN DE TOPICS
 
-  sprintf(CHIPID, "ESP_%d", ESP.getChipId());
+  sprintf(CHIP_ID, "ESP_%d", ESP.getChipId());
 
   sprintf(topic_P_conexion, "II%s/ESP_%d/conexion", GRUPO, ESP.getChipId());
   sprintf(topic_P_datos, "II%s/ESP_%d/datos", GRUPO, ESP.getChipId());
@@ -391,14 +381,23 @@ void loop() {
         }
   }
 
-  if(pulsacion == 1){analogWrite(LED1,(LED*(-255.0)-100.0*-255.0)*(1/100.0));}
-    else if (pulsacion == 2){analogWrite(LED1,0);}                         // Si la pulsación es doble poner el Led1 al máximo (0)
-    else if (pulsacion == 3){intenta_OTA();}                               // Si la pulsación es prolongada comprobar actualización
+  if(pulsacion == 1)
+    {
+      analogWrite(LED1,(LED*(-255.0)-100.0*-255.0)*(1/100.0));              // Si la pulsación es simple poner el Led1 al valor que le llega por MQTT
+      sprintf(origen, "MQTT");
+    }
+    else if (pulsacion == 2)
+    {
+      analogWrite(LED1,0);                                                   // Si la pulsación es doble poner el Led1 al máximo (0)
+      sprintf(origen, "Pulsador");
+    }                         
+    else if (pulsacion == 3){intenta_OTA();}                                // Si la pulsación es prolongada comprobar actualización
   
   if (!mqtt_client.connected()) conecta_mqtt();                             // Comprobar conexión al servidor MQTT, y realizarla en caso negativo
   mqtt_client.loop();                                                       // La librería MQTT recupera el control
-  unsigned long ahora = millis();                                           // Temporización para el envío de mensajes
-  if (ahora - ultimo_mensaje >= 30000) 
+  unsigned long ahora_mensaje = millis();                                                         // Temporización para el envío de mensajes
+  
+  if (ahora_mensaje - ultimo_mensaje >= 30000) 
   {
     delay(dht.getMinimumSamplingPeriod());                                  // Delay para no sobrecargar los sensores
 
@@ -414,19 +413,37 @@ void loop() {
     
 //·····················································
 
-    StaticJsonDocument<300> datos;                                          // Construir Json con los datos de los sensores
-    datos["Uptime"] = tiempo;
-    datos["Vcc"] = volt;
+    StaticJsonDocument<64> json_conexion;
+    json_conexion["CHIPID"] = CHIP_ID;
+    json_conexion["online"] = online;
+    serializeJson(json_conexion, topic_P_conexion);
+    
+    StaticJsonDocument<256> json_datos;
+    json_datos["CHIPID"] = CHIP_ID;
+    json_datos["Uptime"] = Uptime;
+    json_datos["Vcc"]  = Vcc;
+    JsonObject DHT11 = json_datos.createNestedObject("DHT11");
+      DHT11["temp"] = temp;
+      DHT11["hum"] = hum;
+      json_datos["LED"] = LED;
+      json_datos["SWITCH"] = SWITCH;
+    JsonObject Wifi = json_datos.createNestedObject("Wifi");
+      Wifi["SSId"] = "infind";
+      Wifi["IP"] = IP;
+      Wifi["RSSI"] = RSSi;
+    serializeJson(json_datos, topic_P_datos);
 
-    JsonObject DTH11 = datos.createNestedObject("DTH11");
-    DTH11["Temperatura"] = temp;
-    DTH11["Humedad"] = hum;
+    StaticJsonDocument<96> json_led_status;
+    json_led_status["CHIPID"] = CHIP_ID;
+    json_led_status["LED"] = LED;
+    json_led_status["origen"] = origen;
+    serializeJson(json_led_status, topic_P_ledstatus);
 
-    JsonObject Wifi = datos.createNestedObject("Wifi");
-    Wifi["SSId"] = ssid;
-    Wifi["IP"] = IP;
-    Wifi["RSSI"] = rssi_;
+    StaticJsonDocument<96> json_switch_status;
+    json_switch_status["CHIPID"] = CHIP_ID;
+    json_switch_status["SWITCH"] = SWITCH;
+    json_switch_status["origen"] = origen;
+    serializeJson(json_switch_status, topic_P_switchstatus);
 
-    SerializeComplex(topic_P_datos,datos);
   }
-}*/
+}
