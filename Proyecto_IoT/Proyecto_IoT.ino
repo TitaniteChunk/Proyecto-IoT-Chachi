@@ -49,8 +49,8 @@ bool online = true;
 
 int Uptime;
 int Vcc;
-float temperatura;
-float humedad;
+float temp;
+float hum;
 int LED;
 int SWITCH;
 char SSId[16];
@@ -60,7 +60,9 @@ int envia;
 int actualiza;
 int velocidad;
 char origen[16] = "MQTT";
-
+int level_led;
+int level_switch;
+int ID;
 
 // VARIABLES GLOBALES PARA CONTROLAR LEDS Y BOTÓN
 int LED1 = 2;  
@@ -78,7 +80,6 @@ unsigned long ultima_int = 0;
 volatile int lectura;
 int lectura2;
 volatile unsigned long ahora;
-volatile unsigned long temp;
 
 // DECLARACIÓN DE FUNCIONES PARA OTA
 void progreso_OTA(int,int);
@@ -221,7 +222,8 @@ void procesa_mensaje(char* topic, byte* payload, unsigned int length) {
     }
   } 
   else
-//····················································· 
+//·-·-·-·-·-·-·-·-·-·SUBSCRIPCIONES··-·-·-·-·-·-·-·-·-·
+
   if(strcmp(topic,topic_S_config)==0)
   {
     if(root.containsKey("envia"))                                            // Comprobar si existe el campo/clave "envia"
@@ -258,6 +260,41 @@ void procesa_mensaje(char* topic, byte* payload, unsigned int length) {
     Serial.println("Error: Topic desconocido");
   }
   }
+  
+//·····················································
+
+   if(strcmp(topic,topic_S_ledcmd)==0)
+  {
+    if(root.containsKey("level"))                                            // Comprobar si existe el campo/clave "envia"
+    { 
+      if(strcmp(root["level"],"null")==0){}                                  // Comprobar que el contenido del mensaje no sea "null"
+      else {level_led = root["level"];} 
+    }
+    
+    if(root.containsKey("id"))                                            // Comprobar si existe el campo/clave "envia"
+    { 
+      if(strcmp(root["id"],"null")==0){}                                  // Comprobar que el contenido del mensaje no sea "null"
+      else {ID = root["id"];} 
+    }
+  }
+  
+//·····················································
+
+   if(strcmp(topic,topic_P_switchstatus)==0)
+  {
+    if(root.containsKey("level"))                                            // Comprobar si existe el campo/clave "envia"
+    { 
+      if(strcmp(root["level"],"null")==0){}                                  // Comprobar que el contenido del mensaje no sea "null"
+      else {level_switch = root["level"];} 
+    }
+    if(root.containsKey("id"))                                            // Comprobar si existe el campo/clave "envia"
+    { 
+      if(strcmp(root["id"],"null")==0){}                                  // Comprobar que el contenido del mensaje no sea "null"
+      else {ID = root["id"];} 
+    }
+  }
+  
+
 free(mensaje);                                                              // Liberar la memoria del mensaje
 }
 
@@ -401,8 +438,8 @@ void loop() {
   {
     delay(dht.getMinimumSamplingPeriod());                                  // Delay para no sobrecargar los sensores
 
-    float hum = dht.getHumidity();                                          // Lectura de la humedad
-    float temp = dht.getTemperature();                                      // Lectura de la temperatura
+    float humedad = dht.getHumidity();                                          // Lectura de la humedad
+    float temperatura = dht.getTemperature();                                      // Lectura de la temperatura
     unsigned volt = ESP.getVcc()/1000;                                      // Lectura del nivel del voltaje en milivoltios
     bool wifi = WiFi.status();                                              // Comprueba conexión
     long rssi_ = WiFi.RSSI();                                               // Comprueba RSSI
