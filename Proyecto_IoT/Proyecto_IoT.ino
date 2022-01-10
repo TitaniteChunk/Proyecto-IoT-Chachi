@@ -20,11 +20,11 @@ ADC_MODE(ADC_VCC)
 
 // VARIABLES GLOBALES PARA CONFIGURAR WIFI
 
-const char* ssid = "ubnt";
-const char* password = "Ap02167-584jH39";
+const char* ssid = "infind";
+const char* password = "1518wifi";
 const char* mqtt_server = "iot.ac.uma.es";
-const char* mqtt_user = "infind";
-const char* mqtt_pass = "zancudo";
+const char* mqtt_user = "II1";
+const char* mqtt_pass = "7o56oYsu";
 
 // VARIABLES GLOBALES PARA CONFIGURAR MQTT
 
@@ -37,8 +37,10 @@ char topic_S_ledcmd[256];
 char topic_S_switchcmd[256];
 char topic_S_FOTA[256];
 
-//char GRUPO[16] = "1";
-
+char GRUPO[16] = "1";
+#define TAMANHO_MENSAJE 128
+unsigned long ultimo_mensaje=0;
+unsigned long ultima_recepcion=0;
 
 // VARIABLES GLOBALES PARA ALMACENAR VARIABLES MQTT
 
@@ -157,7 +159,6 @@ void conecta_wifi() {
     Serial.print(".");
   }
   Serial.printf("\nWiFi connected, IP address: %s\n", WiFi.localIP().toString().c_str());
-  online = true; //++++
 }
 
 //-----------------------------------------------------
@@ -189,24 +190,43 @@ void procesa_mensaje(char* topic, byte* payload, unsigned int length) {
   char *mensaje = (char *)malloc(length+1);                                 // Reservar memoria para copia del mensaje
   strncpy(mensaje, (char*)payload, length);                                 // Copiar el mensaje en cadena de caracteres
   mensaje[length]='\0';                                                     // Caracter cero marca el final de la cadena
+
+  StaticJsonDocument<512> root;
+  DeserializationError error = deserializeJson(root, mensaje,length);     // Deserializar Json y generar error en su caso
+
+  if (error) {                                                            // Compruebo si hubo error
+    Serial.print("Error deserializeJson() failed: ");
+    Serial.println(error.c_str());
+  }
   
   Serial.printf("Mensaje de LED recibido [%s] %s\n", topic, mensaje);
-
-
+  
  
+  if(strcmp(topic,"infind/GRUPO1/led/cmd")==0)                              // Comprobar el topic
+  {
+    if(root.containsKey("level"))                                           // Comprobar si existe el campo/clave que estamos buscando
+    { 
+     Serial.print("Mensaje OK (1) \n");
+     LED = root["level"];                                                   // Guardar el nivel de Led deseado (1)
+
+    
+     StaticJsonDocument<300> estado_led;
+     estado_led["Led"] = LED;
+     SerializeComplex(topic_P_ledstatus,estado_led);                        // Serializar Json con el estado del Led (1)
+
+     
+    }
+    else
+    {
+      Serial.print("Error : ");
+      Serial.println("\"level\" key not found in JSON");
+    }
+  } 
+  else
 //·-·-·-·-·-·-·-·-·-·SUBSCRIPCIONES··-·-·-·-·-·-·-·-·-·
 
   if(strcmp(topic,topic_S_config)==0)
   {
-
-    StaticJsonDocument<512> root;
-    DeserializationError error = deserializeJson(root, mensaje,length);
-
-      if (error) {                                                            // Compruebo si hubo error
-    Serial.print("Error deserializeJson() failed: ");
-    Serial.println(error.c_str());
-                 }else
-    
     if(root.containsKey("envia"))                                            // Comprobar si existe el campo/clave "envia"
     { 
       if(strcmp(root["envia"],"null")==0){}                                  // Comprobar que el contenido del mensaje no sea "null"
@@ -245,18 +265,11 @@ void procesa_mensaje(char* topic, byte* payload, unsigned int length) {
 //·····················································
 
    if(strcmp(topic,topic_S_ledcmd)==0)
-  { StaticJsonDocument<512> root;
-    DeserializationError error = deserializeJson(root, mensaje,length);
-
-      if (error) {                                                            // Compruebo si hubo error
-    Serial.print("Error deserializeJson() failed: ");
-    Serial.println(error.c_str());
-                 }else
-                 
+  {
     if(root.containsKey("level"))                                            // Comprobar si existe el campo/clave "envia"
     { 
       if(strcmp(root["level"],"null")==0){}                                  // Comprobar que el contenido del mensaje no sea "null"
-      else {LED = root["level"];} 
+      else {level_led = root["level"];} 
     }
     
     if(root.containsKey("id"))                                            // Comprobar si existe el campo/clave "envia"
@@ -265,8 +278,27 @@ void procesa_mensaje(char* topic, byte* payload, unsigned int length) {
       else {ID = root["id"];} 
     }
   }
+  
+//·····················································
+
+   if(strcmp(topic,topic_P_switchstatus)==0)
+  {
+    if(root.containsKey("level"))                                            // Comprobar si existe el campo/clave "envia"
+    { 
+      if(strcmp(root["level"],"null")==0){}                                  // Comprobar que el contenido del mensaje no sea "null"
+      else {level_switch = root["level"];} 
+    }
+    if(root.containsKey("id"))                                            // Comprobar si existe el campo/clave "envia"
+    { 
+      if(strcmp(root["id"],"null")==0){}                                  // Comprobar que el contenido del mensaje no sea "null"
+      else {ID = root["id"];} 
+    }
+  }
+  
+
 free(mensaje);                                                              // Liberar la memoria del mensaje
 }
+
 //-----------------------------------------------------
 
 void SerializeComplex(char* topic, StaticJsonDocument<300> doc)             // Serializar Json con datos de los sensores
@@ -281,30 +313,6 @@ void SerializeComplex(char* topic, StaticJsonDocument<300> doc)             // S
 
 //-----------------------------------------------------
 
-ICACHE_RAM_ATTR void RTI() {                                                // Manejo de la interrupción del botón
-  lectura=digitalRead(boton_flash);
-  ahora = millis();
-  // descomentar para eliminar rebotes
-  if(lectura==estado_int || ahora-ultima_int<50) return;                    // filtro rebotes 50ms
-  if(lectura==LOW)
-  { 
-   estado_int=LOW;
-   pulso2 = pulso1;
-   pulso1 = ahora;
-  }
-  else
-  {
-   estado_int=HIGH;
-  }
-
-ultima_int = ahora;
-
-}
-
-
-
-
-
 void setup() {
   
   pinMode(boton_flash, INPUT_PULLUP);                                       // Parte dedicada al botón
@@ -317,22 +325,23 @@ void setup() {
   Serial.println("Status\tHumidity (%)\tTemperature (C)\t(F)\tHeatIndex (C)\t(F)");
   pinMode(LED1, OUTPUT);                                                    // inicializa GPIO como salida
   digitalWrite(LED1, HIGH);                                                 // apaga el led
- 
-  procesa_mensaje(topic_S_ledcmd, (byte*)cadena, strlen(cadena));
+  dht.setup(5, DHTesp::DHT11);                                              // Inicializar conexiones de los sensores
+  procesa_mensaje("infind/GRUPO1/led/cmd", (byte*)cadena, strlen(cadena));
  
 //·····················································  
 // CREACIÓN DE TOPICS
 
-  sprintf(CHIP_ID, "ESP_%lu", ESP.getChipId());
-  sprintf(topic_P_conexion, "II1/%s/conexion", CHIP_ID);
-  sprintf(topic_P_datos, "II1/%s/datos", CHIP_ID);
-  sprintf(topic_P_ledstatus, "II1/%s/led/status", CHIP_ID);
-  sprintf(topic_P_switchstatus, "II1/%s/switch/status", CHIP_ID);
+  sprintf(CHIP_ID, "ESP_%d", ESP.getChipId());
+
+  sprintf(topic_P_conexion, "II%s/ESP_%d/conexion", GRUPO, ESP.getChipId());
+  sprintf(topic_P_datos, "II%s/ESP_%d/datos", GRUPO, ESP.getChipId());
+  sprintf(topic_P_ledstatus, "II%s/ESP_%d/led/status", GRUPO, ESP.getChipId());
+  sprintf(topic_P_switchstatus, "II%s/ESP_%d/switch/status", GRUPO, ESP.getChipId());
   
-  sprintf(topic_S_config, "II1/%s/config", CHIP_ID);
-  sprintf(topic_S_ledcmd, "II1/%s/led/cmd", CHIP_ID);
-  sprintf(topic_S_switchcmd, "II1/%s/swich/cmd", CHIP_ID);   
-  sprintf(topic_S_FOTA, "II1/%s/FOTA", CHIP_ID); 
+  sprintf(topic_S_config, "II%s/ESP_%d/config", GRUPO, ESP.getChipId());
+  sprintf(topic_S_ledcmd, "II%s/ESP_%d/led/cmd", GRUPO, ESP.getChipId());
+  sprintf(topic_S_switchcmd, "II%s/ESP_%d/swich/cmd", GRUPO, ESP.getChipId());   
+  sprintf(topic_S_FOTA, "II%s/ESP_%d/FOTA", GRUPO, ESP.getChipId()); 
 
 
 //·····················································
@@ -365,13 +374,29 @@ conexion["Online"]=wifi;                                                    // C
 
 SerializeComplex(topic_P_conexion,conexion);                                // Serializar Json con información sobre la conexión
 
- dht.setup(5, DHTesp::DHT11);                                              // Inicializar conexiones de los sensores
 }
 
 //-----------------------------------------------------
-#define TAMANHO_MENSAJE 128
-unsigned long ahora_mensaje=0;
-unsigned long ultimo_mensaje=0;
+
+ICACHE_RAM_ATTR void RTI() {                                                // Manejo de la interrupción del botón
+  lectura=digitalRead(boton_flash);
+  ahora = millis();
+  // descomentar para eliminar rebotes
+  if(lectura==estado_int || ahora-ultima_int<50) return;                    // filtro rebotes 50ms
+  if(lectura==LOW)
+  { 
+   estado_int=LOW;
+   pulso2 = pulso1;
+   pulso1 = ahora;
+  }
+  else
+  {
+   estado_int=HIGH;
+  }
+
+ultima_int = ahora;
+
+}
 
 //-----------------------------------------------------
 
@@ -408,57 +433,55 @@ void loop() {
   
   if (!mqtt_client.connected()) conecta_mqtt();                             // Comprobar conexión al servidor MQTT, y realizarla en caso negativo
   mqtt_client.loop();                                                       // La librería MQTT recupera el control
-  unsigned long ahora_mensaje = millis();                                   // Temporización para el envío de mensajes
+  unsigned long ahora_mensaje = millis();                                                         // Temporización para el envío de mensajes
   
   if (ahora_mensaje - ultimo_mensaje >= 30000) 
   {
     delay(dht.getMinimumSamplingPeriod());                                  // Delay para no sobrecargar los sensores
 
-    float humedad = dht.getHumidity();                                      // Lectura de la humedad
-    float temperatura = dht.getTemperature();                               // Lectura de la temperatura
+    float humedad = dht.getHumidity();                                          // Lectura de la humedad
+    float temperatura = dht.getTemperature();                                      // Lectura de la temperatura
     unsigned volt = ESP.getVcc()/1000;                                      // Lectura del nivel del voltaje en milivoltios
     bool wifi = WiFi.status();                                              // Comprueba conexión
-    long RSSi = WiFi.RSSI();                                               // Comprueba RSSI
+    long rssi_ = WiFi.RSSI();                                               // Comprueba RSSI
     String  IP = WiFi.localIP().toString().c_str();                         // Guarda IP
-    int Uptime = millis();                                                  // Guarda momento de la lecura
+    int tiempo = millis();                                                  // Guarda momento de la lecura
   
-    ultimo_mensaje = ahora_mensaje;                                         // Actualizar instancia del último mensaje
+    ultimo_mensaje = ahora;                                                 // Actualizar instancia del último mensaje
     
 //·····················································
 
     StaticJsonDocument<64> json_conexion;
     json_conexion["CHIPID"] = CHIP_ID;
     json_conexion["online"] = online;
-    SerializeComplex(topic_P_conexion, json_conexion);
+    serializeJson(json_conexion, topic_P_conexion);
     
     StaticJsonDocument<256> json_datos;
     json_datos["CHIPID"] = CHIP_ID;
     json_datos["Uptime"] = Uptime;
-    json_datos["Vcc"]  = volt;
+    json_datos["Vcc"]  = Vcc;
     JsonObject DHT11 = json_datos.createNestedObject("DHT11");
-      DHT11["temp"] = temperatura;
-      DHT11["hum"] = humedad;
+      DHT11["temp"] = temp;
+      DHT11["hum"] = hum;
       json_datos["LED"] = LED;
       json_datos["SWITCH"] = SWITCH;
     JsonObject Wifi = json_datos.createNestedObject("Wifi");
-      Wifi["SSId"] = wifi;
+      Wifi["SSId"] = "infind";
       Wifi["IP"] = IP;
       Wifi["RSSI"] = RSSi;
-    SerializeComplex(topic_P_datos, json_datos);
+    serializeJson(json_datos, topic_P_datos);
 
     StaticJsonDocument<96> json_led_status;
     json_led_status["CHIPID"] = CHIP_ID;
     json_led_status["LED"] = LED;
     json_led_status["origen"] = origen;
-    SerializeComplex(topic_P_ledstatus, json_led_status);
+    serializeJson(json_led_status, topic_P_ledstatus);
 
     StaticJsonDocument<96> json_switch_status;
     json_switch_status["CHIPID"] = CHIP_ID;
     json_switch_status["SWITCH"] = SWITCH;
     json_switch_status["origen"] = origen;
-    SerializeComplex(topic_P_switchstatus, json_switch_status);
+    serializeJson(json_switch_status, topic_P_switchstatus);
 
   }
-
-  
 }
