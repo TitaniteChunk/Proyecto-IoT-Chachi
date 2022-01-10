@@ -1,0 +1,520 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2580
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 [\
+    \{\
+        "id": "e899939ef18ae51b",\
+        "type": "tab",\
+        "label": "Flow 7",\
+        "disabled": false,\
+        "info": ""\
+    \},\
+    \{\
+        "id": "667673518149f98a",\
+        "type": "mqtt out",\
+        "z": "e899939ef18ae51b",\
+        "name": "",\
+        "topic": "infind/GRUPO1/led/cmd",\
+        "qos": "",\
+        "retain": "",\
+        "respTopic": "",\
+        "contentType": "",\
+        "userProps": "",\
+        "correl": "",\
+        "expiry": "",\
+        "broker": "6e14c028e8273cfb",\
+        "x": 870,\
+        "y": 640,\
+        "wires": []\
+    \},\
+    \{\
+        "id": "a6cbf24055585047",\
+        "type": "ui_slider",\
+        "z": "e899939ef18ae51b",\
+        "name": "",\
+        "label": "Intensidad (%)",\
+        "tooltip": "",\
+        "group": "f2b40320.566b8",\
+        "order": 0,\
+        "width": 0,\
+        "height": 0,\
+        "passthru": true,\
+        "outs": "all",\
+        "topic": "",\
+        "min": 0,\
+        "max": "100",\
+        "step": 1,\
+        "x": 320,\
+        "y": 640,\
+        "wires": [\
+            [\
+                "3b8f9ea1040ac3c2"\
+            ]\
+        ]\
+    \},\
+    \{\
+        "id": "3b8f9ea1040ac3c2",\
+        "type": "function",\
+        "z": "e899939ef18ae51b",\
+        "name": "monta json",\
+        "func": "\\nreturn \{\\"payload\\":\{\\"level\\":msg.payload\}\};",\
+        "outputs": 1,\
+        "noerr": 0,\
+        "initialize": "",\
+        "finalize": "",\
+        "libs": [],\
+        "x": 550,\
+        "y": 640,\
+        "wires": [\
+            [\
+                "667673518149f98a"\
+            ]\
+        ]\
+    \},\
+    \{\
+        "id": "8fb0cd67965aebd0",\
+        "type": "mqtt in",\
+        "z": "e899939ef18ae51b",\
+        "name": "",\
+        "topic": "infind/GRUPO1/led/status",\
+        "qos": "2",\
+        "datatype": "auto",\
+        "broker": "6e14c028e8273cfb",\
+        "nl": false,\
+        "rap": false,\
+        "rh": "0",\
+        "x": 250,\
+        "y": 840,\
+        "wires": [\
+            [\
+                "648a9a9d8218a0c3",\
+                "a6b55d9f9abf5a19"\
+            ]\
+        ]\
+    \},\
+    \{\
+        "id": "648a9a9d8218a0c3",\
+        "type": "debug",\
+        "z": "e899939ef18ae51b",\
+        "name": "",\
+        "active": false,\
+        "tosidebar": true,\
+        "console": false,\
+        "tostatus": false,\
+        "complete": "false",\
+        "x": 510,\
+        "y": 760,\
+        "wires": []\
+    \},\
+    \{\
+        "id": "1addd65a7c2cb3f4",\
+        "type": "ui_gauge",\
+        "z": "e899939ef18ae51b",\
+        "name": "",\
+        "group": "f2b40320.566b8",\
+        "order": 3,\
+        "width": 0,\
+        "height": 0,\
+        "gtype": "gage",\
+        "title": "Intensidad LED",\
+        "label": "%",\
+        "format": "\{\{value\}\}%",\
+        "min": 0,\
+        "max": "100",\
+        "colors": [\
+            "#c1e8fb",\
+            "#55a2dd",\
+            "#095ece"\
+        ],\
+        "seg1": "",\
+        "seg2": "",\
+        "className": "",\
+        "x": 900,\
+        "y": 840,\
+        "wires": []\
+    \},\
+    \{\
+        "id": "05694a36d847f967",\
+        "type": "function",\
+        "z": "e899939ef18ae51b",\
+        "name": "extrae intensidad",\
+        "func": "msg.payload=msg.payload.level;\\nreturn msg;\\n\\n",\
+        "outputs": 1,\
+        "noerr": 0,\
+        "initialize": "",\
+        "finalize": "",\
+        "libs": [],\
+        "x": 670,\
+        "y": 840,\
+        "wires": [\
+            [\
+                "1addd65a7c2cb3f4"\
+            ]\
+        ]\
+    \},\
+    \{\
+        "id": "a6b55d9f9abf5a19",\
+        "type": "json",\
+        "z": "e899939ef18ae51b",\
+        "name": "",\
+        "property": "payload",\
+        "action": "",\
+        "pretty": false,\
+        "x": 490,\
+        "y": 840,\
+        "wires": [\
+            [\
+                "05694a36d847f967"\
+            ]\
+        ]\
+    \},\
+    \{\
+        "id": "7a96922b994b964f",\
+        "type": "debug",\
+        "z": "e899939ef18ae51b",\
+        "name": "",\
+        "active": true,\
+        "tosidebar": true,\
+        "console": false,\
+        "tostatus": false,\
+        "complete": "true",\
+        "x": 500,\
+        "y": 380,\
+        "wires": []\
+    \},\
+    \{\
+        "id": "1209493851b6fb66",\
+        "type": "function",\
+        "z": "e899939ef18ae51b",\
+        "name": "adapta  mensaje desde Alexa",\
+        "func": "if(msg.command==\\"SetBrightness\\") //level \\n    return \{\\"payload\\":\{\\"level\\":msg.payload\}\};\\nelse // ON-OFF\\n    if(msg.payload==\\"ON\\") \\n        return \{\\"payload\\":\{\\"level\\":100\}\};\\n    else \\n        return \{\\"payload\\":\{\\"level\\":0\}\};",\
+        "outputs": 1,\
+        "noerr": 0,\
+        "initialize": "",\
+        "finalize": "",\
+        "libs": [],\
+        "x": 560,\
+        "y": 500,\
+        "wires": [\
+            [\
+                "667673518149f98a"\
+            ]\
+        ]\
+    \},\
+    \{\
+        "id": "78e4a7dc5b404cf5",\
+        "type": "function",\
+        "z": "e899939ef18ae51b",\
+        "name": "actualiza temperatura en Alexa",\
+        "func": "return \{ \\"payload\\" : \{ \\"state\\" : \{ \\"temperature\\" : msg.payload \} \}, \\"acknowledge\\" : true \};",\
+        "outputs": 1,\
+        "noerr": 0,\
+        "initialize": "",\
+        "finalize": "",\
+        "libs": [],\
+        "x": 850,\
+        "y": 120,\
+        "wires": [\
+            [\
+                "f819b3ad725369eb"\
+            ]\
+        ]\
+    \},\
+    \{\
+        "id": "4642a8190cf07c8f",\
+        "type": "function",\
+        "z": "e899939ef18ae51b",\
+        "name": "confirma estado led a Alexa",\
+        "func": "msg.acknowledge=true;\\nreturn msg;",\
+        "outputs": 1,\
+        "noerr": 0,\
+        "initialize": "",\
+        "finalize": "",\
+        "libs": [],\
+        "x": 640,\
+        "y": 420,\
+        "wires": [\
+            [\
+                "e9eb70b381a31270",\
+                "94ab3c78870a6068"\
+            ]\
+        ]\
+    \},\
+    \{\
+        "id": "e9eb70b381a31270",\
+        "type": "debug",\
+        "z": "e899939ef18ae51b",\
+        "name": "",\
+        "active": false,\
+        "tosidebar": true,\
+        "console": false,\
+        "tostatus": false,\
+        "complete": "true",\
+        "x": 890,\
+        "y": 500,\
+        "wires": []\
+    \},\
+    \{\
+        "id": "0350319d038d540d",\
+        "type": "mqtt in",\
+        "z": "e899939ef18ae51b",\
+        "name": "",\
+        "topic": "infind/GRUPO1/datos",\
+        "qos": "2",\
+        "datatype": "auto",\
+        "broker": "6e14c028e8273cfb",\
+        "nl": false,\
+        "rap": false,\
+        "rh": "0",\
+        "x": 280,\
+        "y": 120,\
+        "wires": [\
+            [\
+                "ace008e93feab372"\
+            ]\
+        ]\
+    \},\
+    \{\
+        "id": "ace008e93feab372",\
+        "type": "json",\
+        "z": "e899939ef18ae51b",\
+        "name": "",\
+        "property": "payload",\
+        "action": "",\
+        "pretty": false,\
+        "x": 470,\
+        "y": 120,\
+        "wires": [\
+            [\
+                "a66db348b9db3f9a",\
+                "222d2b3a2f972ba2"\
+            ]\
+        ]\
+    \},\
+    \{\
+        "id": "a66db348b9db3f9a",\
+        "type": "function",\
+        "z": "e899939ef18ae51b",\
+        "name": "extrae",\
+        "func": "msg.payload=msg.payload.DTH11.Temperatura;\\nmsg.topic=\\"Temp\\";\\nreturn msg;",\
+        "outputs": 1,\
+        "noerr": 0,\
+        "initialize": "",\
+        "finalize": "",\
+        "libs": [],\
+        "x": 630,\
+        "y": 120,\
+        "wires": [\
+            [\
+                "78e4a7dc5b404cf5",\
+                "ac1b0d35a5698f59"\
+            ]\
+        ]\
+    \},\
+    \{\
+        "id": "c1d46059ed2c5bbe",\
+        "type": "alexa-smart-home-v3",\
+        "z": "e899939ef18ae51b",\
+        "conf": "5fed7bc4f4b9bff1",\
+        "device": "36374",\
+        "acknowledge": false,\
+        "name": "LED",\
+        "topic": "",\
+        "x": 310,\
+        "y": 420,\
+        "wires": [\
+            [\
+                "7a96922b994b964f",\
+                "1209493851b6fb66",\
+                "4642a8190cf07c8f"\
+            ]\
+        ]\
+    \},\
+    \{\
+        "id": "f819b3ad725369eb",\
+        "type": "alexa-smart-home-v3-state",\
+        "z": "e899939ef18ae51b",\
+        "conf": "5fed7bc4f4b9bff1",\
+        "device": "36375",\
+        "name": "Sensor",\
+        "x": 1080,\
+        "y": 120,\
+        "wires": []\
+    \},\
+    \{\
+        "id": "e3c25ea7e4f2abe0",\
+        "type": "comment",\
+        "z": "e899939ef18ae51b",\
+        "name": "Se reciben los datos de Temperatura y se env\'edan a ALEXA",\
+        "info": "Se reciben los datos de Temperatura y Humedad y se env\'edan a ALEXA",\
+        "x": 390,\
+        "y": 60,\
+        "wires": []\
+    \},\
+    \{\
+        "id": "8b8ee238d2a065fe",\
+        "type": "comment",\
+        "z": "e899939ef18ae51b",\
+        "name": "Se reciben los datos del estado del LED y se env\'edan a ALEXA",\
+        "info": "Se reciben los datos de Temperatura y se env\'edan a ALEXA",\
+        "x": 360,\
+        "y": 920,\
+        "wires": []\
+    \},\
+    \{\
+        "id": "d4f5dc91601c9bfa",\
+        "type": "comment",\
+        "z": "e899939ef18ae51b",\
+        "name": "Se reciben ordenes para el LED desde Alexa",\
+        "info": "",\
+        "x": 310,\
+        "y": 340,\
+        "wires": []\
+    \},\
+    \{\
+        "id": "63074b253b1e9ec9",\
+        "type": "comment",\
+        "z": "e899939ef18ae51b",\
+        "name": "Se env\'edan al dispositivo por MQTT",\
+        "info": "",\
+        "x": 900,\
+        "y": 580,\
+        "wires": []\
+    \},\
+    \{\
+        "id": "64c10b40cb7b3ebb",\
+        "type": "comment",\
+        "z": "e899939ef18ae51b",\
+        "name": "Confirmacion a Alexa de que se ha recibido el mensaje.",\
+        "info": "",\
+        "x": 1030,\
+        "y": 320,\
+        "wires": []\
+    \},\
+    \{\
+        "id": "222d2b3a2f972ba2",\
+        "type": "debug",\
+        "z": "e899939ef18ae51b",\
+        "name": "",\
+        "active": false,\
+        "tosidebar": true,\
+        "console": false,\
+        "tostatus": false,\
+        "complete": "true",\
+        "x": 650,\
+        "y": 260,\
+        "wires": []\
+    \},\
+    \{\
+        "id": "94ab3c78870a6068",\
+        "type": "alexa-smart-home-v3-resp",\
+        "z": "e899939ef18ae51b",\
+        "x": 1040,\
+        "y": 400,\
+        "wires": []\
+    \},\
+    \{\
+        "id": "ac1b0d35a5698f59",\
+        "type": "ui_chart",\
+        "z": "e899939ef18ae51b",\
+        "name": "",\
+        "group": "f2b40320.566b8",\
+        "order": 2,\
+        "width": 0,\
+        "height": 0,\
+        "label": "Temperatura",\
+        "chartType": "line",\
+        "legend": "false",\
+        "xformat": "HH:mm:ss",\
+        "interpolate": "linear",\
+        "nodata": "",\
+        "dot": false,\
+        "ymin": "",\
+        "ymax": "",\
+        "removeOlder": 1,\
+        "removeOlderPoints": "",\
+        "removeOlderUnit": "3600",\
+        "cutout": 0,\
+        "useOneColor": false,\
+        "useUTC": false,\
+        "colors": [\
+            "#1f77b4",\
+            "#aec7e8",\
+            "#ff7f0e",\
+            "#2ca02c",\
+            "#98df8a",\
+            "#d62728",\
+            "#ff9896",\
+            "#9467bd",\
+            "#c5b0d5"\
+        ],\
+        "outputs": 1,\
+        "useDifferentColor": false,\
+        "className": "",\
+        "x": 950,\
+        "y": 240,\
+        "wires": [\
+            []\
+        ]\
+    \},\
+    \{\
+        "id": "6e14c028e8273cfb",\
+        "type": "mqtt-broker",\
+        "name": "",\
+        "broker": "iot.ac.uma.es",\
+        "port": "1883",\
+        "clientid": "",\
+        "usetls": false,\
+        "protocolVersion": "4",\
+        "keepalive": "60",\
+        "cleansession": true,\
+        "birthTopic": "",\
+        "birthQos": "0",\
+        "birthRetain": "false",\
+        "birthPayload": "",\
+        "birthMsg": \{\},\
+        "closeTopic": "",\
+        "closeQos": "0",\
+        "closeRetain": "false",\
+        "closePayload": "",\
+        "closeMsg": \{\},\
+        "willTopic": "",\
+        "willQos": "0",\
+        "willRetain": "false",\
+        "willPayload": "",\
+        "willMsg": \{\},\
+        "sessionExpiry": ""\
+    \},\
+    \{\
+        "id": "f2b40320.566b8",\
+        "type": "ui_group",\
+        "name": "Control LED",\
+        "tab": "edce03d1.68b46",\
+        "order": 1,\
+        "disp": true,\
+        "width": "6",\
+        "collapse": false\
+    \},\
+    \{\
+        "id": "5fed7bc4f4b9bff1",\
+        "type": "alexa-smart-home-v3-conf",\
+        "z": "e899939ef18ae51b",\
+        "username": "hgtorralba",\
+        "mqttserver": "mq-red.cb-net.co.uk",\
+        "webapiurl": "red.cb-net.co.uk",\
+        "contextName": "memory"\
+    \},\
+    \{\
+        "id": "edce03d1.68b46",\
+        "type": "ui_tab",\
+        "name": "TAREA GRUPO",\
+        "icon": "dashboard",\
+        "order": 1,\
+        "disabled": false,\
+        "hidden": false\
+    \}\
+]}
