@@ -62,7 +62,7 @@ int velocidad;
 char origen[16] = "MQTT";
 int level_led;
 int level_switch;
-int ID;
+char ID[16];
 
 // VARIABLES GLOBALES PARA CONTROLAR LEDS Y BOTÓN
 int LED1 = 2;  
@@ -190,16 +190,20 @@ void procesa_mensaje(char* topic, byte* payload, unsigned int length) {
   char *mensaje = (char *)malloc(length+1);                                 // Reservar memoria para copia del mensaje
   strncpy(mensaje, (char*)payload, length);                                 // Copiar el mensaje en cadena de caracteres
   mensaje[length]='\0';                                                     // Caracter cero marca el final de la cadena
+  
 
+  
   StaticJsonDocument<512> root;
   DeserializationError error = deserializeJson(root, mensaje,length);     // Deserializar Json y generar error en su caso
+
+
 
   if (error) {                                                            // Compruebo si hubo error
     Serial.print("Error deserializeJson() failed: ");
     Serial.println(error.c_str());
   }
   
-  Serial.printf("Mensaje de LED recibido [%s] %s\n", topic, mensaje);
+
   
  
   if(strcmp(topic,"infind/GRUPO1/led/cmd")==0)                              // Comprobar el topic
@@ -256,47 +260,50 @@ void procesa_mensaje(char* topic, byte* payload, unsigned int length) {
       if(strcmp(root["SWITCH"],"null")==0){}                                 // Comprobar que el contenido del mensaje no sea "null"
       else {SWITCH = root["SWITCH"];} 
     }
+  }
+  
+//·····················································
+
+  else if(strcmp(topic,topic_S_ledcmd)==0)
+  {
+    if(root.containsKey("id"))                                            // Comprobar si existe el campo/clave "envia"
+    { 
+      if(strcmp(root["id"],"null")==0){}                                  // Comprobar que el contenido del mensaje no sea "null"
+      else {
+       sprintf(ID, root["id"]); 
+
+       if(strcmp(ID,CHIP_ID)==0)
+       {
+         if(root.containsKey("level")){level_led = root["level"];}         
+       }
+      }
+    }
+  }
+  
+//·····················································
+
+   else if(strcmp(topic,topic_S_switchcmd)==0)
+  {
+    if(root.containsKey("id"))                                            // Comprobar si existe el campo/clave "envia"
+    { 
+      if(strcmp(root["id"],"null")==0){}                                  // Comprobar que el contenido del mensaje no sea "null"
+      else {
+       sprintf(ID, root["id"]); 
+
+       if(strcmp(ID,CHIP_ID)==0)
+       {
+         if(root.containsKey("level")){level_switch = root["level"];}         
+       }
+      }
+    }
+  }
   else
   {
     Serial.println("Error: Topic desconocido");
   }
-  }
-  
-//·····················································
-
-   if(strcmp(topic,topic_S_ledcmd)==0)
-  {
-    if(root.containsKey("level"))                                            // Comprobar si existe el campo/clave "envia"
-    { 
-      if(strcmp(root["level"],"null")==0){}                                  // Comprobar que el contenido del mensaje no sea "null"
-      else {level_led = root["level"];} 
-    }
-    
-    if(root.containsKey("id"))                                            // Comprobar si existe el campo/clave "envia"
-    { 
-      if(strcmp(root["id"],"null")==0){}                                  // Comprobar que el contenido del mensaje no sea "null"
-      else {ID = root["id"];} 
-    }
-  }
-  
-//·····················································
-
-   if(strcmp(topic,topic_P_switchstatus)==0)
-  {
-    if(root.containsKey("level"))                                            // Comprobar si existe el campo/clave "envia"
-    { 
-      if(strcmp(root["level"],"null")==0){}                                  // Comprobar que el contenido del mensaje no sea "null"
-      else {level_switch = root["level"];} 
-    }
-    if(root.containsKey("id"))                                            // Comprobar si existe el campo/clave "envia"
-    { 
-      if(strcmp(root["id"],"null")==0){}                                  // Comprobar que el contenido del mensaje no sea "null"
-      else {ID = root["id"];} 
-    }
-  }
-  
 
 free(mensaje);                                                              // Liberar la memoria del mensaje
+
 }
 
 //-----------------------------------------------------
@@ -353,7 +360,7 @@ void setup() {
   mqtt_client.setBufferSize(512);                                           // Ajustar tamaño de Buffer
   mqtt_client.setCallback(procesa_mensaje);                                 // Definir función de Callback
   conecta_mqtt();                                                           // Conectarse al servidor MQTT
-  Serial.printf("Identificador placa: %s\n", CHIPID );
+  Serial.printf("Identificador placa: %s\n", CHIP_ID );
   Serial.printf("Topic publicacion  : %s\n", topic_P_conexion);
   Serial.printf("Topic publicacion  : %s\n", topic_P_datos);
   Serial.printf("Topic publicacion  : %s\n", topic_P_ledstatus);
@@ -421,26 +428,26 @@ void loop() {
 
   if(pulsacion == 1)
     {
-      analogWrite(LED1,(LED*(-255.0)-100.0*-255.0)*(1/100.0));              // Si la pulsación es simple poner el Led1 al valor que le llega por MQTT
+      analogWrite(LED1,(level_led*(-255.0)-100.0*-255.0)*(1/100.0));        // Si la pulsación es simple poner el Led1 al valor que le llega por MQTT
       sprintf(origen, "MQTT");
     }
     else if (pulsacion == 2)
     {
-      analogWrite(LED1,0);                                                   // Si la pulsación es doble poner el Led1 al máximo (0)
+      analogWrite(LED1,0);                                                  // Si la pulsación es doble poner el Led1 al máximo (0)
       sprintf(origen, "Pulsador");
     }                         
     else if (pulsacion == 3){intenta_OTA();}                                // Si la pulsación es prolongada comprobar actualización
   
   if (!mqtt_client.connected()) conecta_mqtt();                             // Comprobar conexión al servidor MQTT, y realizarla en caso negativo
   mqtt_client.loop();                                                       // La librería MQTT recupera el control
-  unsigned long ahora_mensaje = millis();                                                         // Temporización para el envío de mensajes
+  unsigned long ahora_mensaje = millis();                                   // Temporización para el envío de mensajes
   
   if (ahora_mensaje - ultimo_mensaje >= 30000) 
   {
     delay(dht.getMinimumSamplingPeriod());                                  // Delay para no sobrecargar los sensores
 
-    float humedad = dht.getHumidity();                                          // Lectura de la humedad
-    float temperatura = dht.getTemperature();                                      // Lectura de la temperatura
+    float humedad = dht.getHumidity();                                      // Lectura de la humedad
+    float temperatura = dht.getTemperature();                               // Lectura de la temperatura
     unsigned volt = ESP.getVcc()/1000;                                      // Lectura del nivel del voltaje en milivoltios
     bool wifi = WiFi.status();                                              // Comprueba conexión
     long rssi_ = WiFi.RSSI();                                               // Comprueba RSSI
