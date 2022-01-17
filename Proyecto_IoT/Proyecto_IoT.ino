@@ -39,15 +39,18 @@ char topic_S_FOTA[256];
 
 char GRUPO[16] = "1";
 #define TAMANHO_MENSAJE 128
-unsigned long ultimo_mensaje=0;
-unsigned long ultima_recepcion=0;
+unsigned long ultimo_mensaje = 0;
+unsigned long ultima_actualizacion = 0;
+unsigned long ultimo_cambioled = 0;
+unsigned long ultima_recepcion = 0;
 
 // VARIABLES GLOBALES PARA ALMACENAR VARIABLES MQTT
 
 char CHIP_ID[16];
 bool online = true;
 
-int Uptime;
+unsigned long inicializacion;
+unsigned long Uptime;
 int Vcc;
 float temp;
 float hum;
@@ -56,11 +59,13 @@ int SWITCH;
 char SSId[16];
 char IP[16];
 int RSSi;
-int envia;
-int actualiza;
-int velocidad;
+int envia = 10;
+int actualiza = 0;
+int velocidad = 50;
 char origen[16] = "MQTT";
 int level_led;
+int objetivo_led = 0;
+int estado_led = 0;
 int level_switch;
 char ID[16];
 
@@ -190,43 +195,17 @@ void procesa_mensaje(char* topic, byte* payload, unsigned int length) {
   char *mensaje = (char *)malloc(length+1);                                 // Reservar memoria para copia del mensaje
   strncpy(mensaje, (char*)payload, length);                                 // Copiar el mensaje en cadena de caracteres
   mensaje[length]='\0';                                                     // Caracter cero marca el final de la cadena
-  
 
+  Serial.printf("Mensaje recibido\n" );
   
   StaticJsonDocument<512> root;
   DeserializationError error = deserializeJson(root, mensaje,length);     // Deserializar Json y generar error en su caso
-
-
 
   if (error) {                                                            // Compruebo si hubo error
     Serial.print("Error deserializeJson() failed: ");
     Serial.println(error.c_str());
   }
-  
 
-  
- 
-  if(strcmp(topic,"infind/GRUPO1/led/cmd")==0)                              // Comprobar el topic
-  {
-    if(root.containsKey("level"))                                           // Comprobar si existe el campo/clave que estamos buscando
-    { 
-     Serial.print("Mensaje OK (1) \n");
-     LED = root["level"];                                                   // Guardar el nivel de Led deseado (1)
-
-    
-     StaticJsonDocument<300> estado_led;
-     estado_led["Led"] = LED;
-     SerializeComplex(topic_P_ledstatus,estado_led);                        // Serializar Json con el estado del Led (1)
-
-     
-    }
-    else
-    {
-      Serial.print("Error : ");
-      Serial.println("\"level\" key not found in JSON");
-    }
-  } 
-  else
 //·-·-·-·-·-·-·-·-·-·SUBSCRIPCIONES··-·-·-·-·-·-·-·-·-·
 
   if(strcmp(topic,topic_S_config)==0)
@@ -268,17 +247,16 @@ void procesa_mensaje(char* topic, byte* payload, unsigned int length) {
   {
     if(root.containsKey("id"))                                            // Comprobar si existe el campo/clave "envia"
     { 
-      if(strcmp(root["id"],"null")==0){}                                  // Comprobar que el contenido del mensaje no sea "null"
-      else {
-       sprintf(ID, root["id"]); 
-
-       if(strcmp(ID,CHIP_ID)==0)
-       {
-         if(root.containsKey("level")){level_led = root["level"];}         
-       }
-      }
+      sprintf(ID, root["id"]); 
+    }     
+    if(root.containsKey("level"))
+    {
+      if (pulsacion == 1){objetivo_led = root["level"];}
+      level_led = root["level"];         
     }
   }
+  
+  
   
 //·····················································
 
@@ -324,6 +302,8 @@ void setup() {
   
   pinMode(boton_flash, INPUT_PULLUP);                                       // Parte dedicada al botón
   attachInterrupt(digitalPinToInterrupt(boton_flash), RTI, CHANGE);
+
+  inicializacion = millis();
   
   char cadena[512];
   Serial.begin(115200);
@@ -428,32 +408,50 @@ void loop() {
 
   if(pulsacion == 1)
     {
-      analogWrite(LED1,(level_led*(-255.0)-100.0*-255.0)*(1/100.0));        // Si la pulsación es simple poner el Led1 al valor que le llega por MQTT
+      objetivo_led = level_led;
+      //analogWrite(LED1,(level_led*(-255.0)-100.0*-255.0)*(1/100.0));        // Si la pulsación es simple poner el Led1 al valor que le llega por MQTT
       sprintf(origen, "MQTT");
     }
     else if (pulsacion == 2)
     {
       analogWrite(LED1,0);                                                  // Si la pulsación es doble poner el Led1 al máximo (0)
+      objetivo_led = 100;
       sprintf(origen, "Pulsador");
     }                         
     else if (pulsacion == 3){intenta_OTA();}                                // Si la pulsación es prolongada comprobar actualización
-  
+    
   if (!mqtt_client.connected()) conecta_mqtt();                             // Comprobar conexión al servidor MQTT, y realizarla en caso negativo
   mqtt_client.loop();                                                       // La librería MQTT recupera el control
   unsigned long ahora_mensaje = millis();                                   // Temporización para el envío de mensajes
   
-  if (ahora_mensaje - ultimo_mensaje >= 10000) 
+  if (ahora_mensaje - ultimo_cambioled >= velocidad)
+  {
+    ultimo_cambioled = ahora_mensaje;
+    if (estado_led < objetivo_led)
+    {
+      estado_led = estado_led + 1;
+      analogWrite(LED1,(estado_led*(-255.0)-100.0*-255.0)*(1/100.0));   
+    }
+    else if (estado_led > objetivo_led)
+    {
+      estado_led = estado_led - 1;
+      analogWrite(LED1,(estado_led*(-255.0)-100.0*-255.0)*(1/100.0));   
+    }
+  }
+  
+  
+  if (ahora_mensaje - ultimo_mensaje >= envia*1000) 
   {
     delay(dht.getMinimumSamplingPeriod());                                  // Delay para no sobrecargar los sensores
 
-    float humedad = dht.getHumidity();                                      // Lectura de la humedad
-    float temperatura = dht.getTemperature();                               // Lectura de la temperatura
-    unsigned volt = ESP.getVcc()/1000;                                      // Lectura del nivel del voltaje en milivoltios
+    hum = dht.getHumidity();                                      // Lectura de la humedad
+    temp = dht.getTemperature();                               // Lectura de la temperatura
+    Vcc = ESP.getVcc()/1000;                                      // Lectura del nivel del voltaje en milivoltios
     bool wifi = WiFi.status();                                              // Comprueba conexión
-    long rssi_ = WiFi.RSSI();                                               // Comprueba RSSI
-    String  IP = WiFi.localIP().toString().c_str();                         // Guarda IP
-    int tiempo = millis();                                                  // Guarda momento de la lecura
-  
+    RSSi = WiFi.RSSI();                                               // Comprueba RSSI
+    sprintf(IP, WiFi.localIP().toString().c_str());                         // Guarda IP
+    unsigned long tiempo = millis();                                                  // Guarda momento de la lecura
+    Uptime = tiempo - inicializacion;
     ultimo_mensaje = ahora_mensaje;                                                 // Actualizar instancia del último mensaje
     
 //·····················································
@@ -470,8 +468,8 @@ void loop() {
     JsonObject DHT11 = json_datos.createNestedObject("DHT11");
       DHT11["temp"] = temp;
       DHT11["hum"] = hum;
-      json_datos["LED"] = LED;
-      json_datos["SWITCH"] = SWITCH;
+      json_datos["LED"] = level_led;
+      json_datos["SWITCH"] = level_switch;
     JsonObject Wifi = json_datos.createNestedObject("Wifi");
       Wifi["SSId"] = "infind";
       Wifi["IP"] = IP;
@@ -480,15 +478,25 @@ void loop() {
 
     StaticJsonDocument<96> json_led_status;
     json_led_status["CHIPID"] = CHIP_ID;
-    json_led_status["LED"] = LED;
+    json_led_status["LED"] = level_led;
     json_led_status["origen"] = origen;
     SerializeComplex(topic_P_ledstatus,json_led_status);
 
     StaticJsonDocument<96> json_switch_status;
     json_switch_status["CHIPID"] = CHIP_ID;
-    json_switch_status["SWITCH"] = SWITCH;
+    json_switch_status["SWITCH"] = level_switch;
     json_switch_status["origen"] = origen;
     SerializeComplex(topic_P_switchstatus,json_switch_status);
 
   }
+
+  if (actualiza != 0)
+  {
+    if (ahora_mensaje - ultima_actualizacion >= actualiza*1000)
+    {
+      ultima_actualizacion = ahora_mensaje;
+      intenta_OTA();
+    }
+  }
+  
 }
