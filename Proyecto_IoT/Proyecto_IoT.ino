@@ -61,6 +61,7 @@ char IP[16];
 int RSSi;
 int envia = 10;
 int actualiza = 0;
+char actualizar[16] = "false";
 int velocidad = 50;
 char origen[16] = "MQTT";
 int level_led;
@@ -219,7 +220,14 @@ void procesa_mensaje(char* topic, byte* payload, unsigned int length) {
     if(root.containsKey("actualiza"))                                        // Comprobar si existe el campo/clave "actualiza"
     { 
       if(strcmp(root["actualiza"],"null")==0){}                              // Comprobar que el contenido del mensaje no sea "null"
-      else {actualiza = root["actualiza"];} 
+      else 
+      {
+        actualiza = root["actualiza"];
+        if (actualiza != 0)
+        {
+        sprintf(actualizar,"true");
+        }
+      } 
     }
  
     if(root.containsKey("velocidad"))                                        // Comprobar si existe el campo/clave "velocidad"
@@ -256,25 +264,32 @@ void procesa_mensaje(char* topic, byte* payload, unsigned int length) {
     }
   }
   
-  
-  
 //·····················································
 
-   else if(strcmp(topic,topic_S_switchcmd)==0)
+  else if(strcmp(topic,topic_S_switchcmd)==0)
   {
     if(root.containsKey("id"))                                            // Comprobar si existe el campo/clave "envia"
     { 
-      if(strcmp(root["id"],"null")==0){}                                  // Comprobar que el contenido del mensaje no sea "null"
-      else {
-       sprintf(ID, root["id"]); 
-
-       if(strcmp(ID,CHIP_ID)==0)
-       {
-         if(root.containsKey("level")){level_switch = root["level"];}         
-       }
-      }
+      sprintf(ID, root["id"]); 
+    }     
+    if(root.containsKey("level"))
+    {
+      level_switch = root["level"];         
     }
   }
+
+//·····················································
+
+  else if(strcmp(topic,topic_S_FOTA)==0)
+  {
+    if(root.containsKey("actualiza"))                                            // Comprobar si existe el campo/clave "envia"
+    { 
+      sprintf(actualizar,root["actualiza"]); 
+    }     
+  }
+
+//·····················································
+  
   else
   {
     Serial.println("Error: Topic desconocido");
@@ -489,14 +504,15 @@ void loop() {
     SerializeComplex(topic_P_switchstatus,json_switch_status);
 
   }
-
-  if (actualiza != 0)
+  if (strcmp(actualizar,"true"))
   {
-    if (ahora_mensaje - ultima_actualizacion >= actualiza*1000)
+    if (actualiza != 0)
     {
-      ultima_actualizacion = ahora_mensaje;
-      intenta_OTA();
+      if (ahora_mensaje - ultima_actualizacion >= actualiza*1000)
+      {
+        ultima_actualizacion = ahora_mensaje;
+        intenta_OTA();
+      }
     }
-  }
-  
+  }   
 }
