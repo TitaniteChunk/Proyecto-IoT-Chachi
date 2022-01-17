@@ -442,7 +442,7 @@ void loop() {
   mqtt_client.loop();                                                       // La librería MQTT recupera el control
   unsigned long ahora_mensaje = millis();                                   // Temporización para el envío de mensajes
   
-  if (ahora_mensaje - ultimo_mensaje >= 30000) 
+  if (ahora_mensaje - ultimo_mensaje >= 10000) 
   {
     delay(dht.getMinimumSamplingPeriod());                                  // Delay para no sobrecargar los sensores
 
@@ -454,14 +454,14 @@ void loop() {
     String  IP = WiFi.localIP().toString().c_str();                         // Guarda IP
     int tiempo = millis();                                                  // Guarda momento de la lecura
   
-    ultimo_mensaje = ahora;                                                 // Actualizar instancia del último mensaje
+    ultimo_mensaje = ahora_mensaje;                                                 // Actualizar instancia del último mensaje
     
 //·····················································
 
     StaticJsonDocument<64> json_conexion;
     json_conexion["CHIPID"] = CHIP_ID;
     json_conexion["online"] = online;
-    serializeJson(json_conexion, topic_P_conexion);
+    SerializeComplex(topic_P_conexion,json_conexion);
     
     StaticJsonDocument<256> json_datos;
     json_datos["CHIPID"] = CHIP_ID;
@@ -476,19 +476,19 @@ void loop() {
       Wifi["SSId"] = "infind";
       Wifi["IP"] = IP;
       Wifi["RSSI"] = RSSi;
-    serializeJson(json_datos, topic_P_datos);
+    SerializeComplex(topic_P_datos,json_datos);
 
     StaticJsonDocument<96> json_led_status;
     json_led_status["CHIPID"] = CHIP_ID;
     json_led_status["LED"] = LED;
     json_led_status["origen"] = origen;
-    serializeJson(json_led_status, topic_P_ledstatus);
+    SerializeComplex(topic_P_ledstatus,json_led_status);
 
     StaticJsonDocument<96> json_switch_status;
     json_switch_status["CHIPID"] = CHIP_ID;
     json_switch_status["SWITCH"] = SWITCH;
     json_switch_status["origen"] = origen;
-    serializeJson(json_switch_status, topic_P_switchstatus);
+    SerializeComplex(topic_P_switchstatus,json_switch_status);
 
   }
 }
