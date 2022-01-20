@@ -11,7 +11,7 @@ DHTesp dht;
 ADC_MODE(ADC_VCC)
 
 // VARIABLES GLOBALES PARA CONFIGURAR ACTUALIZACIÓN
-#define HTTP_OTA_ADDRESS      F("172.16.53.143")          // Address of OTA update server
+#define HTTP_OTA_ADDRESS      F("172.16.53.112")          // Address of OTA update server
 #define HTTP_OTA_PATH         F("/esp8266-ota/update")    // Path to update firmware
 #define HTTP_OTA_PORT         1880                        // Port of update server
 #define HTTP_OTA_VERSION      String(__FILE__).substring(String(__FILE__).lastIndexOf('\\')+1) + ".nodemcu" 
