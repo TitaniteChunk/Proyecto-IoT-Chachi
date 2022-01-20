@@ -11,7 +11,7 @@ DHTesp dht;
 ADC_MODE(ADC_VCC)
 
 // VARIABLES GLOBALES PARA CONFIGURAR ACTUALIZACIÓN
-#define HTTP_OTA_ADDRESS      F("172.16.53.112")          // Address of OTA update server
+#define HTTP_OTA_ADDRESS      F("172.16.53.143")          // Address of OTA update server
 #define HTTP_OTA_PATH         F("/esp8266-ota/update")    // Path to update firmware
 #define HTTP_OTA_PORT         1880                        // Port of update server
 #define HTTP_OTA_VERSION      String(__FILE__).substring(String(__FILE__).lastIndexOf('\\')+1) + ".nodemcu" 
@@ -32,6 +32,7 @@ char topic_P_conexion[256];
 char topic_P_datos[256];
 char topic_P_ledstatus[256];
 char topic_P_switchstatus[256];
+char topic_P_error[256];
 char topic_S_config[256];
 char topic_S_ledcmd[256];
 char topic_S_switchcmd[256];
@@ -49,6 +50,8 @@ unsigned long ultima_recepcion = 0;
 char CHIP_ID[16];
 bool online = true;
 
+
+char ERRORES[32] = "nada";
 unsigned long inicializacion;
 unsigned long Uptime;
 int Vcc;
@@ -339,6 +342,7 @@ void setup() {
   sprintf(topic_P_datos, "II%s/ESP_%d/datos", GRUPO, ESP.getChipId());
   sprintf(topic_P_ledstatus, "II%s/ESP_%d/led/status", GRUPO, ESP.getChipId());
   sprintf(topic_P_switchstatus, "II%s/ESP_%d/switch/status", GRUPO, ESP.getChipId());
+  sprintf(topic_P_error, "II%s/ESP_%d/error", GRUPO, ESP.getChipId());
   
   sprintf(topic_S_config, "II%s/ESP_%d/config", GRUPO, ESP.getChipId());
   sprintf(topic_S_ledcmd, "II%s/ESP_%d/led/cmd", GRUPO, ESP.getChipId());
@@ -460,8 +464,11 @@ void loop() {
     delay(dht.getMinimumSamplingPeriod());                                  // Delay para no sobrecargar los sensores
 
     hum = dht.getHumidity();                                      // Lectura de la humedad
+    if (hum<0||hum>100){printf(ERRORES, "El sensor de humedad está fallando");}
     temp = dht.getTemperature();                               // Lectura de la temperatura
+    if (temp<10||temp>70){printf(ERRORES, "El sensor de temperatura está fallando");}
     Vcc = ESP.getVcc()/1000;                                      // Lectura del nivel del voltaje en milivoltios
+    if (Vcc<10||Vcc>70){printf(ERRORES, "El sensor de temperatura está fallando");}
     bool wifi = WiFi.status();                                              // Comprueba conexión
     RSSi = WiFi.RSSI();                                               // Comprueba RSSI
     sprintf(IP, WiFi.localIP().toString().c_str());                         // Guarda IP
@@ -503,6 +510,12 @@ void loop() {
     json_switch_status["origen"] = origen;
     SerializeComplex(topic_P_switchstatus,json_switch_status);
 
+    if (strcmp(ERRORES,"nada")!=0)
+    {
+    StaticJsonDocument<96> json_error;
+    json_switch_status["ERROR"] = ERRORES;
+    SerializeComplex(topic_P_switchstatus,json_error);
+    }
   }
   if (strcmp(actualizar,"true"))
   {
