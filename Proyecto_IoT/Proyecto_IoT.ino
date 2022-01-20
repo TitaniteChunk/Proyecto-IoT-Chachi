@@ -200,8 +200,9 @@ void procesa_mensaje(char* topic, byte* payload, unsigned int length) {
   strncpy(mensaje, (char*)payload, length);                                 // Copiar el mensaje en cadena de caracteres
   mensaje[length]='\0';                                                     // Caracter cero marca el final de la cadena
 
-  Serial.printf("Mensaje recibido\n" );
-  
+  Serial.print("Mensaje recibido\n" );
+  Serial.println(mensaje);
+  Serial.println(topic);
   StaticJsonDocument<512> root;
   DeserializationError error = deserializeJson(root, mensaje,length);     // Deserializar Json y generar error en su caso
 
@@ -253,13 +254,15 @@ void procesa_mensaje(char* topic, byte* payload, unsigned int length) {
   }
   
 //·····················································
-
+  
   else if(strcmp(topic,topic_S_ledcmd)==0)
   {
-    if(root.containsKey("id"))                                            // Comprobar si existe el campo/clave "envia"
+    
+    if(root.containsKey("id"))                                            
     { 
       sprintf(ID, root["id"]); 
     }     
+    
     if(root.containsKey("level"))
     {
       if (pulsacion == 1){objetivo_led = root["level"];}
@@ -271,7 +274,7 @@ void procesa_mensaje(char* topic, byte* payload, unsigned int length) {
 
   else if(strcmp(topic,topic_S_switchcmd)==0)
   {
-    if(root.containsKey("id"))                                            // Comprobar si existe el campo/clave "envia"
+    if(root.containsKey("id"))                                           
     { 
       sprintf(ID, root["id"]); 
     }     
@@ -331,8 +334,7 @@ void setup() {
   pinMode(LED1, OUTPUT);                                                    // inicializa GPIO como salida
   digitalWrite(LED1, HIGH);                                                 // apaga el led
   dht.setup(5, DHTesp::DHT11);                                              // Inicializar conexiones de los sensores
-  procesa_mensaje("infind/GRUPO1/led/cmd", (byte*)cadena, strlen(cadena));
- 
+
 //·····················································  
 // CREACIÓN DE TOPICS
 
@@ -348,8 +350,7 @@ void setup() {
   sprintf(topic_S_ledcmd, "II%s/ESP_%d/led/cmd", GRUPO, ESP.getChipId());
   sprintf(topic_S_switchcmd, "II%s/ESP_%d/swich/cmd", GRUPO, ESP.getChipId());   
   sprintf(topic_S_FOTA, "II%s/ESP_%d/FOTA", GRUPO, ESP.getChipId()); 
-
-
+ 
 //·····················································
   
   bool wifi = WiFi.status();
