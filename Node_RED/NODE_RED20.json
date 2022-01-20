@@ -1,0 +1,2315 @@
+[
+    {
+        "id": "ccd8ad10.a1f6a",
+        "type": "tab",
+        "label": "Descarga de datos Proyecto",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "eb7fd5e1.688b68",
+        "type": "debug",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "x": 650,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "6a35b6f9.ecd878",
+        "type": "json",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 430,
+        "y": 220,
+        "wires": [
+            [
+                "eb7fd5e1.688b68",
+                "904efe22.796c",
+                "9cf490d5b4449a58",
+                "68867cbff937cfa3",
+                "58a4e4f9093446a2",
+                "1dee104460378325",
+                "c7a05311eb5443d3"
+            ]
+        ]
+    },
+    {
+        "id": "904efe22.796c",
+        "type": "function",
+        "z": "ccd8ad10.a1f6a",
+        "name": "añade fecha",
+        "func": "msg.payload.date=new Date();\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 650,
+        "y": 180,
+        "wires": [
+            [
+                "ef7e002a.1aedd",
+                "91e6edbbb23d8a8a"
+            ]
+        ]
+    },
+    {
+        "id": "ef7e002a.1aedd",
+        "type": "mongodb out",
+        "z": "ccd8ad10.a1f6a",
+        "mongodb": "3752afa1.deaf9",
+        "name": "",
+        "collection": "II1",
+        "payonly": true,
+        "upsert": false,
+        "multi": false,
+        "operation": "store",
+        "x": 880,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "e97b432c.ad89c",
+        "type": "inject",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "props": [
+            {
+                "p": "payload",
+                "v": "",
+                "vt": "date"
+            },
+            {
+                "p": "topic",
+                "v": "",
+                "vt": "string"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 180,
+        "y": 360,
+        "wires": [
+            [
+                "5072d0ad.9eae5"
+            ]
+        ]
+    },
+    {
+        "id": "5072d0ad.9eae5",
+        "type": "mongodb in",
+        "z": "ccd8ad10.a1f6a",
+        "mongodb": "3752afa1.deaf9",
+        "name": "",
+        "collection": "Proyecto1",
+        "operation": "find",
+        "x": 460,
+        "y": 360,
+        "wires": [
+            [
+                "21360331.5e623c"
+            ]
+        ]
+    },
+    {
+        "id": "21360331.5e623c",
+        "type": "debug",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "x": 810,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "553b3a49.aa67b4",
+        "type": "http response",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "statusCode": "",
+        "headers": {
+            "Content-Disposition": "attachment; filename=Medidas_Sensores.csv"
+        },
+        "x": 1310,
+        "y": 620,
+        "wires": []
+    },
+    {
+        "id": "a398a3af.87a8e",
+        "type": "function",
+        "z": "ccd8ad10.a1f6a",
+        "name": "Unicode y separador",
+        "func": "//add Unicode BOM character (byte order mark) to make EXCEL knows this is UTF-8\nif(global.get(\"separador_decimal\")==\"punto\")\n{\n    msg.payload='\\ufeff'+msg.payload;\n\n}\nelse\n{\n    msg.payload='\\ufeff'+(msg.payload).replace(/\\./g,\",\");\n}\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1140,
+        "y": 620,
+        "wires": [
+            [
+                "553b3a49.aa67b4"
+            ]
+        ]
+    },
+    {
+        "id": "d04c9d5b.0eff5",
+        "type": "function",
+        "z": "ccd8ad10.a1f6a",
+        "name": "Consulta de los Sensores",
+        "func": "// fecha por defecto es hoy\nvar ahora = new Date();\n// pillo los globales si los hay, si no la fecha de hoy\nvar desde = new Date(global.get(\"desde\") || ahora);\nvar hasta = new Date(global.get(\"hasta\") || ahora); \n// el día de inicio desde las cero horas\nvar inicio = new Date(desde.getFullYear(),desde.getMonth(),desde.getDate(),0,0,0,0);\n// el día final es hasta final del día\nvar final = new Date(hasta.getFullYear(),hasta.getMonth(),hasta.getDate(),23,59,59,999);\n\nmsg.payload=\n[\n    { \"$match\": { \"date\": { \"$gte\": inicio , \"$lte\": final } } },\n    { \"$project\": {\n        \"_id\": 0,\n        \"date\": 1,\n        \"Temperatura\": \"$DHT11.temp\",\n        \"Humedad\": \"$DHT11.hum\",\n        \"Vcc\": \"$Vcc\",\n        }\n    },\n    { \"$sort\": {\"date\": 1} }\n];\n\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 430,
+        "y": 620,
+        "wires": [
+            [
+                "bc56c48b.90e4d8"
+            ]
+        ]
+    },
+    {
+        "id": "d237b5f9.3d4858",
+        "type": "http in",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "url": "/registros_sensores",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 150,
+        "y": 620,
+        "wires": [
+            [
+                "d04c9d5b.0eff5"
+            ]
+        ]
+    },
+    {
+        "id": "2bc79054.4dac6",
+        "type": "ui_template",
+        "z": "ccd8ad10.a1f6a",
+        "group": "a34ffe7a.04009",
+        "name": "Sensores",
+        "order": 4,
+        "width": "0",
+        "height": "0",
+        "format": "<style>\n.button {\n    text-align: center;\n    font: bold 17px Arial;\n    text-decoration: none;\n    background-color: #339966;\n    color: white;\n    padding: 8px 10px;\n    border: 2px solid #CCCCCC;\n  }\n  \n  .button:hover\n  {\n   background-color: #26734d;\n  }\n\n</style>\n<a href=\"/registros_sensores\" class=\"button\">Descarga registro de sensores en CSV (EXCEL)</a>\n",
+        "storeOutMessages": true,
+        "fwdInMessages": true,
+        "resendOnRefresh": false,
+        "templateScope": "local",
+        "className": "",
+        "x": 110.0000228881836,
+        "y": 474.9998197555542,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "bc56c48b.90e4d8",
+        "type": "mongodb in",
+        "z": "ccd8ad10.a1f6a",
+        "mongodb": "3752afa1.deaf9",
+        "name": "",
+        "collection": "II1",
+        "operation": "aggregate",
+        "x": 680,
+        "y": 620,
+        "wires": [
+            [
+                "a0152c6f.68517"
+            ]
+        ]
+    },
+    {
+        "id": "a0152c6f.68517",
+        "type": "csv",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "sep": ";",
+        "hdrin": "",
+        "hdrout": "all",
+        "multi": "one",
+        "ret": "\\r\\n",
+        "temp": "date,Temperatura, Humedad, Vcc",
+        "skip": 0,
+        "strings": true,
+        "include_empty_strings": false,
+        "include_null_values": false,
+        "x": 970,
+        "y": 620,
+        "wires": [
+            [
+                "a398a3af.87a8e"
+            ]
+        ]
+    },
+    {
+        "id": "5ba69690.6f3a28",
+        "type": "ui_switch",
+        "z": "ccd8ad10.a1f6a",
+        "name": "separdor decimal",
+        "label": "{{msg.topic}}",
+        "tooltip": "",
+        "group": "a34ffe7a.04009",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "decouple": "false",
+        "topic": "",
+        "style": "",
+        "onvalue": "true",
+        "onvalueType": "bool",
+        "onicon": "",
+        "oncolor": "",
+        "offvalue": "false",
+        "offvalueType": "bool",
+        "officon": "",
+        "offcolor": "",
+        "x": 190,
+        "y": 1200,
+        "wires": [
+            [
+                "96e33153.98e75"
+            ]
+        ]
+    },
+    {
+        "id": "64d25d3f.5e61c4",
+        "type": "inject",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "true",
+        "payloadType": "bool",
+        "x": 170.99706649780273,
+        "y": 1122.9118814468384,
+        "wires": [
+            [
+                "96e33153.98e75"
+            ]
+        ]
+    },
+    {
+        "id": "96e33153.98e75",
+        "type": "function",
+        "z": "ccd8ad10.a1f6a",
+        "name": "set global separador_decimal",
+        "func": "if(msg.payload===true)\n{\n    global.set(\"separador_decimal\",\"coma\");\n    msg.topic=\"separador decimal = coma\";\n}\nelse\n{\n    global.set(\"separador_decimal\",\"punto\");\n    msg.topic=\"separador decimal = punto\";\n}\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 499.0084533691406,
+        "y": 1123.6192541122437,
+        "wires": [
+            [
+                "5ba69690.6f3a28"
+            ]
+        ]
+    },
+    {
+        "id": "fc86581d.721438",
+        "type": "ui_date_picker",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "label": "Fecha inicio",
+        "group": "a34ffe7a.04009",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "passthru": true,
+        "topic": "",
+        "topicType": "str",
+        "className": "",
+        "x": 330,
+        "y": 940,
+        "wires": [
+            [
+                "36e52eff.e79652"
+            ]
+        ]
+    },
+    {
+        "id": "b5ec6fbf.5c7b8",
+        "type": "ui_date_picker",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "label": "Fecha final",
+        "group": "a34ffe7a.04009",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "passthru": true,
+        "topic": "",
+        "x": 333.0113525390625,
+        "y": 988.9942374229431,
+        "wires": [
+            [
+                "32225963.2490f6"
+            ]
+        ]
+    },
+    {
+        "id": "36e52eff.e79652",
+        "type": "change",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "desde",
+                "pt": "global",
+                "to": "payload",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 526.0056762695312,
+        "y": 938.6618876457214,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "32225963.2490f6",
+        "type": "change",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "hasta",
+                "pt": "global",
+                "to": "payload",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 529.2329559326172,
+        "y": 989.5454421043396,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "13b2662f.d6754a",
+        "type": "inject",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 132.0084991455078,
+        "y": 964.420440196991,
+        "wires": [
+            [
+                "fc86581d.721438",
+                "b5ec6fbf.5c7b8"
+            ]
+        ]
+    },
+    {
+        "id": "b05d4923.ea6ff8",
+        "type": "comment",
+        "z": "ccd8ad10.a1f6a",
+        "name": "Almacenamiento en base de datos",
+        "info": "",
+        "x": 227.7897491455078,
+        "y": 73.08806610107422,
+        "wires": []
+    },
+    {
+        "id": "3e06173c.94cdb8",
+        "type": "comment",
+        "z": "ccd8ad10.a1f6a",
+        "name": "Controles para seleccionar fechas",
+        "info": "",
+        "x": 189.00848770141602,
+        "y": 867.8977246284485,
+        "wires": []
+    },
+    {
+        "id": "8f0fda03.1a7698",
+        "type": "comment",
+        "z": "ccd8ad10.a1f6a",
+        "name": "Botón en HTML para lanzar descarga de fichero",
+        "info": "",
+        "x": 219.78977966308594,
+        "y": 427.08227348327637,
+        "wires": []
+    },
+    {
+        "id": "7aa4e397.e0472c",
+        "type": "comment",
+        "z": "ccd8ad10.a1f6a",
+        "name": "Flujo para descarga de fichero los datos ",
+        "info": "",
+        "x": 180,
+        "y": 560,
+        "wires": []
+    },
+    {
+        "id": "243ebda4.07bf32",
+        "type": "comment",
+        "z": "ccd8ad10.a1f6a",
+        "name": "Selector de separador decimal",
+        "info": "",
+        "x": 183.01123046875,
+        "y": 1062.5740060806274,
+        "wires": []
+    },
+    {
+        "id": "9bb97336a9c728c9",
+        "type": "mqtt in",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "topic": "II1/ESP_9745759/datos",
+        "qos": "2",
+        "datatype": "auto",
+        "broker": "0c8bf2f642261bd9",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "x": 200,
+        "y": 140,
+        "wires": [
+            [
+                "6a35b6f9.ecd878"
+            ]
+        ]
+    },
+    {
+        "id": "c7a05311eb5443d3",
+        "type": "debug",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 430,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "91e6edbbb23d8a8a",
+        "type": "debug",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 870,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "3ed39b7584c03080",
+        "type": "http in",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "url": "/registros_conexion",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 150,
+        "y": 700,
+        "wires": [
+            [
+                "599ac50de8d8b0d2"
+            ]
+        ]
+    },
+    {
+        "id": "599ac50de8d8b0d2",
+        "type": "function",
+        "z": "ccd8ad10.a1f6a",
+        "name": "Consulta de las Conexiones",
+        "func": "// fecha por defecto es hoy\nvar ahora = new Date();\n// pillo los globales si los hay, si no la fecha de hoy\nvar desde = new Date(global.get(\"desde\") || ahora);\nvar hasta = new Date(global.get(\"hasta\") || ahora); \n// el día de inicio desde las cero horas\nvar inicio = new Date(desde.getFullYear(),desde.getMonth(),desde.getDate(),0,0,0,0);\n// el día final es hasta final del día\nvar final = new Date(hasta.getFullYear(),hasta.getMonth(),hasta.getDate(),23,59,59,999);\n\nmsg.payload=\n[\n    { \"$match\": { \"date\": { \"$gte\": inicio , \"$lte\": final } } },\n    { \"$project\": {\n        \"_id\": 0,\n        \"date\": 1,\n        \"IP\": \"$Wifi.IP\",\n        \"SSId\": \"$Wifi.SSId\",\n        \"RSSI\": \"$Wifi.RSSI\",\n        }\n    },\n    { \"$sort\": {\"date\": 1} }\n];\n\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 440,
+        "y": 700,
+        "wires": [
+            [
+                "78925b9ceca1b14c"
+            ]
+        ]
+    },
+    {
+        "id": "78925b9ceca1b14c",
+        "type": "mongodb in",
+        "z": "ccd8ad10.a1f6a",
+        "mongodb": "3752afa1.deaf9",
+        "name": "",
+        "collection": "II1",
+        "operation": "aggregate",
+        "x": 680,
+        "y": 700,
+        "wires": [
+            [
+                "c30c699cee77d2cd"
+            ]
+        ]
+    },
+    {
+        "id": "c30c699cee77d2cd",
+        "type": "csv",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "sep": ";",
+        "hdrin": "",
+        "hdrout": "all",
+        "multi": "one",
+        "ret": "\\r\\n",
+        "temp": "date,IP, SSId, RSSI",
+        "skip": 0,
+        "strings": true,
+        "include_empty_strings": false,
+        "include_null_values": false,
+        "x": 970,
+        "y": 700,
+        "wires": [
+            [
+                "778b66c399f5c734"
+            ]
+        ]
+    },
+    {
+        "id": "778b66c399f5c734",
+        "type": "http response",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "statusCode": "",
+        "headers": {
+            "Content-Disposition": "attachment; filename=Conexiones.csv"
+        },
+        "x": 1110,
+        "y": 700,
+        "wires": []
+    },
+    {
+        "id": "bcdea6c0c8cc97f6",
+        "type": "ui_template",
+        "z": "ccd8ad10.a1f6a",
+        "group": "a34ffe7a.04009",
+        "name": "Conexiones",
+        "order": 5,
+        "width": "0",
+        "height": "0",
+        "format": "<style>\n.button {\n    text-align: center;\n    font: bold 17px Arial;\n    text-decoration: none;\n    background-color: #339966;\n    color: white;\n    padding: 8px 10px;\n    border: 2px solid #CCCCCC;\n  }\n  \n  .button:hover\n  {\n   background-color: #26734d;\n  }\n\n</style>\n<a href=\"/registros_conexion\" class=\"button\">Descarga registro de conexiones en CSV (EXCEL)</a>\n",
+        "storeOutMessages": true,
+        "fwdInMessages": true,
+        "resendOnRefresh": false,
+        "templateScope": "local",
+        "className": "",
+        "x": 290,
+        "y": 480,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "7a1db8a558023e9b",
+        "type": "http in",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "url": "/registros_actuadores",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 150,
+        "y": 780,
+        "wires": [
+            [
+                "9eb38b266b33676b"
+            ]
+        ]
+    },
+    {
+        "id": "9eb38b266b33676b",
+        "type": "function",
+        "z": "ccd8ad10.a1f6a",
+        "name": "Consulta de los Actuadores",
+        "func": "// fecha por defecto es hoy\nvar ahora = new Date();\n// pillo los globales si los hay, si no la fecha de hoy\nvar desde = new Date(global.get(\"desde\") || ahora);\nvar hasta = new Date(global.get(\"hasta\") || ahora); \n// el día de inicio desde las cero horas\nvar inicio = new Date(desde.getFullYear(),desde.getMonth(),desde.getDate(),0,0,0,0);\n// el día final es hasta final del día\nvar final = new Date(hasta.getFullYear(),hasta.getMonth(),hasta.getDate(),23,59,59,999);\n\nmsg.payload=\n[\n    { \"$match\": { \"date\": { \"$gte\": inicio , \"$lte\": final } } },\n    { \"$project\": {\n        \"_id\": 0,\n        \"date\": 1,\n        \"LED\": \"$LED\",\n        \"SWITCH\": \"$Wifi.SSId\",\n        }\n    },\n    { \"$sort\": {\"date\": 1} }\n];\n\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 440,
+        "y": 780,
+        "wires": [
+            [
+                "918f7f69b97ac354"
+            ]
+        ]
+    },
+    {
+        "id": "918f7f69b97ac354",
+        "type": "mongodb in",
+        "z": "ccd8ad10.a1f6a",
+        "mongodb": "3752afa1.deaf9",
+        "name": "",
+        "collection": "II1",
+        "operation": "aggregate",
+        "x": 680,
+        "y": 780,
+        "wires": [
+            [
+                "93103cec4aabb117"
+            ]
+        ]
+    },
+    {
+        "id": "93103cec4aabb117",
+        "type": "csv",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "sep": ";",
+        "hdrin": "",
+        "hdrout": "all",
+        "multi": "one",
+        "ret": "\\r\\n",
+        "temp": "date,LED,SWITCH",
+        "skip": 0,
+        "strings": true,
+        "include_empty_strings": false,
+        "include_null_values": false,
+        "x": 970,
+        "y": 780,
+        "wires": [
+            [
+                "1edad4de74f62017"
+            ]
+        ]
+    },
+    {
+        "id": "1edad4de74f62017",
+        "type": "http response",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "statusCode": "",
+        "headers": {
+            "Content-Disposition": "attachment; filename=Actuadores.csv"
+        },
+        "x": 1110,
+        "y": 780,
+        "wires": []
+    },
+    {
+        "id": "9de9b96d3c76a803",
+        "type": "ui_template",
+        "z": "ccd8ad10.a1f6a",
+        "group": "a34ffe7a.04009",
+        "name": "Actuadores",
+        "order": 5,
+        "width": "0",
+        "height": "0",
+        "format": "<style>\n.button {\n    text-align: center;\n    font: bold 17px Arial;\n    text-decoration: none;\n    background-color: #339966;\n    color: white;\n    padding: 8px 10px;\n    border: 2px solid #CCCCCC;\n  }\n  \n  .button:hover\n  {\n   background-color: #26734d;\n  }\n\n</style>\n<a href=\"/registros_actuadores\" class=\"button\">Descarga registro de los cambios actuadores en CSV (EXCEL)</a>\n",
+        "storeOutMessages": true,
+        "fwdInMessages": true,
+        "resendOnRefresh": false,
+        "templateScope": "local",
+        "className": "",
+        "x": 490,
+        "y": 480,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "114b5448fdc3d5c7",
+        "type": "function",
+        "z": "ccd8ad10.a1f6a",
+        "name": "mensaje bienvenida",
+        "func": "if(msg.payload.content.substring(0,1)!=\"/\")\n{\n msg.payload.content=\"Hola \"+msg.originalMessage.chat.first_name+\"!! soy el bot del Proyecto IoT I. Puedo responderte a estos comandos:\\n\\n/start\\n\\n/sensores si desea conocer información de estos.\\n\\n/actuadores si de sea conocer su estado o modificarlo.\";\n return msg;\n}",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 620,
+        "y": 1420,
+        "wires": [
+            [
+                "828771135c01ac39"
+            ]
+        ]
+    },
+    {
+        "id": "6f92c020ca414304",
+        "type": "telegram receiver",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "bot": "bba8b2693149435b",
+        "saveDataDir": "",
+        "filterCommands": true,
+        "x": 190,
+        "y": 1360,
+        "wires": [
+            [
+                "114b5448fdc3d5c7"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "828771135c01ac39",
+        "type": "telegram sender",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "bot": "bba8b2693149435b",
+        "haserroroutput": false,
+        "outputs": 1,
+        "x": 1560,
+        "y": 1560,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "d93ae4fb4d61765d",
+        "type": "telegram command",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "command": "/start",
+        "description": "",
+        "registercommand": false,
+        "language": "",
+        "scope": "default",
+        "bot": "bba8b2693149435b",
+        "strict": false,
+        "hasresponse": true,
+        "useregex": false,
+        "removeregexcommand": false,
+        "outputs": 2,
+        "x": 150,
+        "y": 1440,
+        "wires": [
+            [
+                "114b5448fdc3d5c7"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "ee2c136bb51eadbd",
+        "type": "telegram command",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "command": "/sensores",
+        "description": "",
+        "registercommand": false,
+        "language": "",
+        "scope": "default",
+        "bot": "bba8b2693149435b",
+        "strict": false,
+        "hasresponse": true,
+        "useregex": false,
+        "removeregexcommand": false,
+        "outputs": 2,
+        "x": 160,
+        "y": 1540,
+        "wires": [
+            [
+                "3c81f99b6a5ce76b"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "3c81f99b6a5ce76b",
+        "type": "function",
+        "z": "ccd8ad10.a1f6a",
+        "name": "mensaje explicativo",
+        "func": "\n msg.payload.content=\"🌡 SENSORES 🌡\\n\\nPara poder conocer el estado de los sensores utilice el comando: \\n/estado_sensores\\n\\nPara conocer el valor medio en un intervalo determinado utilice: \\n/valor_det\\n\";\n return msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 530,
+        "y": 1540,
+        "wires": [
+            [
+                "828771135c01ac39"
+            ]
+        ]
+    },
+    {
+        "id": "9cf490d5b4449a58",
+        "type": "change",
+        "z": "ccd8ad10.a1f6a",
+        "name": "Temperatura global",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.DHT11.temp",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "temperatura",
+                "pt": "global",
+                "to": "payload.DHT11.temp",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 630,
+        "y": 280,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "425c08986c45ede7",
+        "type": "telegram command",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "command": "/estado_sensores",
+        "description": "",
+        "registercommand": false,
+        "language": "",
+        "scope": "default",
+        "bot": "bba8b2693149435b",
+        "strict": false,
+        "hasresponse": true,
+        "useregex": false,
+        "removeregexcommand": false,
+        "outputs": 2,
+        "x": 210,
+        "y": 1620,
+        "wires": [
+            [
+                "733d17e3bf15cbf3"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "733d17e3bf15cbf3",
+        "type": "function",
+        "z": "ccd8ad10.a1f6a",
+        "name": "Estado de sensores",
+        "func": "var temp = global.get(\"temperatura\");\nvar hum = global.get(\"humedad\");\n msg.payload.content=\"📍La temperatura actual es de: \"+temp+\"ºC\\n\\n📍La humedad actual es de: \"+hum+\"%\";\n return msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 480,
+        "y": 1620,
+        "wires": [
+            [
+                "828771135c01ac39"
+            ]
+        ]
+    },
+    {
+        "id": "68867cbff937cfa3",
+        "type": "change",
+        "z": "ccd8ad10.a1f6a",
+        "name": "Humedad global",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.DHT11.hum",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "humedad",
+                "pt": "global",
+                "to": "payload.DHT11.hum",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 620,
+        "y": 320,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "459d9e543b229c65",
+        "type": "telegram command",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "command": "/actuadores",
+        "description": "",
+        "registercommand": false,
+        "language": "",
+        "scope": "default",
+        "bot": "bba8b2693149435b",
+        "strict": false,
+        "hasresponse": true,
+        "useregex": false,
+        "removeregexcommand": false,
+        "outputs": 2,
+        "x": 190,
+        "y": 1980,
+        "wires": [
+            [
+                "7b9bc5c171662dbc"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "7b9bc5c171662dbc",
+        "type": "function",
+        "z": "ccd8ad10.a1f6a",
+        "name": "mensaje explicativo",
+        "func": "\n msg.payload.content=\"💡 ACTUADORES 💡\\n\\nPara poder conocer el estado de los actuadores utilice el comando: \\n/estado_actuadores\\nPara modififcar el valor de algun actuador utilice el comando: \\n/mod_actuador\\n\";\n return msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 470,
+        "y": 1980,
+        "wires": [
+            [
+                "f52444ddca0e48eb"
+            ]
+        ]
+    },
+    {
+        "id": "06f188ead9804170",
+        "type": "telegram command",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "command": "/estado_actuadores",
+        "description": "",
+        "registercommand": false,
+        "language": "",
+        "scope": "default",
+        "bot": "bba8b2693149435b",
+        "strict": false,
+        "hasresponse": true,
+        "useregex": false,
+        "removeregexcommand": false,
+        "outputs": 2,
+        "x": 210,
+        "y": 2060,
+        "wires": [
+            [
+                "5ee03add119279db"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "5ee03add119279db",
+        "type": "function",
+        "z": "ccd8ad10.a1f6a",
+        "name": "Estado de actuadores",
+        "func": "var led = global.get(\"led\");\nvar sw = global.get(\"sw\");\nvar swt;\n\nif (sw == 1) \n{swt = \"ON\"}\nelse swt = \"OFF\";\n\n msg.payload.content=\"El valor actual del LED es: \"+led+\"\\nEl estado actual del interruptor es: \"+swt;\n return msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 480,
+        "y": 2060,
+        "wires": [
+            [
+                "f52444ddca0e48eb"
+            ]
+        ]
+    },
+    {
+        "id": "58a4e4f9093446a2",
+        "type": "change",
+        "z": "ccd8ad10.a1f6a",
+        "name": "LED global",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.LED",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "led",
+                "pt": "global",
+                "to": "payload",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 870,
+        "y": 280,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "1dee104460378325",
+        "type": "change",
+        "z": "ccd8ad10.a1f6a",
+        "name": "SWITCH global",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.SWITHC",
+                "tot": "msg"
+            },
+            {
+                "t": "set",
+                "p": "sw",
+                "pt": "global",
+                "to": "payload",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 880,
+        "y": 320,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "820866cb278c2ffc",
+        "type": "telegram command",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "command": "/mod_actuador",
+        "description": "",
+        "registercommand": false,
+        "language": "",
+        "scope": "default",
+        "bot": "bba8b2693149435b",
+        "strict": false,
+        "hasresponse": true,
+        "useregex": false,
+        "removeregexcommand": false,
+        "outputs": 2,
+        "x": 200,
+        "y": 2160,
+        "wires": [
+            [
+                "7f0cf5897f2cf90b"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "7f0cf5897f2cf90b",
+        "type": "function",
+        "z": "ccd8ad10.a1f6a",
+        "name": "mensaje explicativo",
+        "func": " var estado_led = global.get(\"led\");\n var estado_sw = global.get(\"sw\");\n var estado_switch;\n \n if (estado_sw == 1)\n {\n    estado_switch = \"ON\";\n    }else{ \n    estado_switch = \"OFF\";\n}\n msg.payload.content=\"El nivel actual del led es: \"+estado_led+\"\\n\\nEl estado actual del SWITCH es: \"+estado_switch+\"\\n\\nPara modificar el valor LED💡 utilice el comando /LED y a continuación, seguidamente, introduzca el valor en porcentaje deseado.\\n\\nPor ejemplo: /LED 85\\n\\nPara modificar el valor del SWITCH 💡 utilice el comando /switch y a continuacion, seguidamente, introduca el valor 0 o 1 para apagarlo o encenderlo respectivamente.\\n\\nPor ejemplo /SWITCH 1 \";\n return msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 470,
+        "y": 2160,
+        "wires": [
+            [
+                "f52444ddca0e48eb"
+            ]
+        ]
+    },
+    {
+        "id": "1d12963269b05957",
+        "type": "telegram sender",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "bot": "bba8b2693149435b",
+        "haserroroutput": false,
+        "outputs": 1,
+        "x": 640,
+        "y": 2760,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "7f064addc8055049",
+        "type": "inject",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 200,
+        "y": 2760,
+        "wires": [
+            [
+                "7848b39c7d221522"
+            ]
+        ]
+    },
+    {
+        "id": "7848b39c7d221522",
+        "type": "function",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "func": "msg.payload = {};\nmsg.payload.chatId = -1001705665908;\nmsg.payload.type = \"message\";\nmsg.payload.content = msg.payload[0];\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 400,
+        "y": 2760,
+        "wires": [
+            [
+                "1d12963269b05957"
+            ]
+        ]
+    },
+    {
+        "id": "d324bbd63da72473",
+        "type": "function",
+        "z": "ccd8ad10.a1f6a",
+        "name": "agrega por días",
+        "func": "// fecha por defecto es hoy\nvar ahora = new Date();\n// pillo los globales si los hay, si no la fecha de hoy\nvar desde = new Date(global.get(\"desde\") || ahora);\nvar hasta = new Date(global.get(\"hasta\") || ahora); \n// el día de inicio desde las cero horas\nvar inicio = new Date(desde.getFullYear(),desde.getMonth(),desde.getDate(),1,0,0,0);\n// el día final es hasta final del días\nvar final = new Date(hasta.getFullYear(),hasta.getMonth(),hasta.getDate(),24,59,59,99);\n\nmsg.payload=\n[\n    { \"$match\": { \"date\": { \"$gte\": inicio , \"$lte\": final } } },\n    { \"$project\": {\n        \"date\": 1,\n        \"temperatura\": \"$DHT11.temp\"\n        }\n    },\n    { \"$group\": {\n        \"_id\": { \n        \"$dateFromParts\" : {\n            \"year\": { \"$year\": \"$date\" }, \n            \"month\": { \"$month\": \"$date\" },\n            \"day\": { \"$dayOfMonth\": \"$date\" }\n        }},\n\n        \"Tmedia\":{\"$avg\":\"$temperatura\"},\n        \"Tmax\":  {\"$max\":\"$temperatura\"},\n        \"Tmin\":  {\"$min\":\"$temperatura\"},\n        \"datos\": {\"$sum\":1},\n    }},\n    { \"$sort\": {\"_id\": 1} }\n];\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 300,
+        "y": 3180,
+        "wires": [
+            [
+                "6286de15aeb25608"
+            ]
+        ]
+    },
+    {
+        "id": "6286de15aeb25608",
+        "type": "mongodb in",
+        "z": "ccd8ad10.a1f6a",
+        "mongodb": "3752afa1.deaf9",
+        "name": "",
+        "collection": "II1",
+        "operation": "aggregate",
+        "x": 524.0141830444336,
+        "y": 3180.0058155059814,
+        "wires": [
+            [
+                "61b84bf4fd9bc78f",
+                "b8403405bcea7f9b"
+            ]
+        ]
+    },
+    {
+        "id": "61b84bf4fd9bc78f",
+        "type": "function",
+        "z": "ccd8ad10.a1f6a",
+        "name": "genera datos gráfica",
+        "func": "var arrayavg=[];\nvar arraymax=[];\nvar arraymin=[];\n\n// los arrays usados en la represenstaciÃ³n grÃ¡fica deben contener objetos JSON con dos campos: {x , y}\n// en x debemos poner la hora en formato \"timestamp\". Si tenemos un objeto fecha se puede convertir usando el mÃ©todo getTime()\n// en y debemos poner el valor de la variable\n// mas info en: https://github.com/node-red/node-red-dashboard/blob/master/Charts.md\n\nif(Array.isArray(msg.payload) && msg.payload.length>0)\n{\n    for (var i = 0; i < msg.payload.length; i++) { // aÃ±ade datos a los array\n        arrayavg.push({x : msg.payload[i]._id.getTime() , y : msg.payload[i].Tmedia});\n        arraymax.push({x : msg.payload[i]._id.getTime() , y : msg.payload[i].Tmax});\n        arraymin.push({x : msg.payload[i]._id.getTime() , y : msg.payload[i].Tmin});\n    }\n}\n    \nmsg.payload = [{\n        \"series\":[\"T.media\",\"T.max\",\"T.min\"],\n        \"data\":[arrayavg, arraymax, arraymin],\n        \"labels\":[\"\"]\n        }];\n\nreturn msg;  ",
+        "outputs": "1",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 880,
+        "y": 3260,
+        "wires": [
+            [
+                "58be77b7a8f895c6"
+            ]
+        ]
+    },
+    {
+        "id": "58be77b7a8f895c6",
+        "type": "ui_chart",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "group": "a169802401a3dd11",
+        "order": 8,
+        "width": 0,
+        "height": 0,
+        "label": "Temperaturas diarias",
+        "chartType": "line",
+        "legend": "true",
+        "xformat": "D/M",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "",
+        "ymax": "",
+        "removeOlder": 1,
+        "removeOlderPoints": "",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "colors": [
+            "#008000",
+            "#ff0000",
+            "#0080ff",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "outputs": 2,
+        "x": 1100,
+        "y": 3260,
+        "wires": [
+            [],
+            []
+        ]
+    },
+    {
+        "id": "bab4f1efd27b9404",
+        "type": "change",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "desde",
+                "pt": "global",
+                "to": "payload",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 414.6914596557617,
+        "y": 2900.571145057678,
+        "wires": [
+            [
+                "94b26aafc2071c3b"
+            ]
+        ]
+    },
+    {
+        "id": "2d8372399e0b4848",
+        "type": "change",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "hasta",
+                "pt": "global",
+                "to": "payload",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 417.918701171875,
+        "y": 2952.454686641693,
+        "wires": [
+            [
+                "94b26aafc2071c3b"
+            ]
+        ]
+    },
+    {
+        "id": "94b26aafc2071c3b",
+        "type": "link out",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "links": [
+            "7fddc45003c2cc2f"
+        ],
+        "x": 617.4556064605713,
+        "y": 2932.701856613159,
+        "wires": []
+    },
+    {
+        "id": "7fddc45003c2cc2f",
+        "type": "link in",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "links": [
+            "94b26aafc2071c3b"
+        ],
+        "x": 136.46699905395508,
+        "y": 3140.8295669555664,
+        "wires": [
+            [
+                "d324bbd63da72473",
+                "9f3659e0271971c4"
+            ]
+        ]
+    },
+    {
+        "id": "9f3659e0271971c4",
+        "type": "function",
+        "z": "ccd8ad10.a1f6a",
+        "name": "agreaga todo según la placa ",
+        "func": "// fecha por defecto es hoy\nvar ahora = new Date();\n// pillo los globales si los hay, si no la fecha de hoy\nvar desde = new Date(global.get(\"desde\") || ahora);\nvar hasta = new Date(global.get(\"hasta\") || ahora); \n// el ddía de inicio desde las cero horas\nvar inicio = new Date(desde.getFullYear(),desde.getMonth(),desde.getDate(),1,0,0,0);\n// el día final es hasta final del día\nvar final = new Date(hasta.getFullYear(),hasta.getMonth(),hasta.getDate(),24,59,59,99);\n\nmsg.payload=\n[\n    { \"$match\": { \"date\": { \"$gte\": inicio , \"$lte\": final } } },\n    { \"$project\": {\n        \"temperatura\": \"$DHT11.temp\"\n        }\n    },\n    { \"$group\": {\n        \"_id\": \"$CHIPID\",\n        \"Tmedia\":{\"$avg\":\"$temperatura\"},\n        \"Tmax\":  {\"$max\":\"$temperatura\"},\n        \"Tmin\":  {\"$min\":\"$temperatura\"},\n        \"datos\": {\"$sum\":1}\n    }}\n];\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 334.69996643066406,
+        "y": 3098.909143447876,
+        "wires": [
+            [
+                "fb25727a4923b0a7"
+            ]
+        ]
+    },
+    {
+        "id": "fb25727a4923b0a7",
+        "type": "mongodb in",
+        "z": "ccd8ad10.a1f6a",
+        "mongodb": "3752afa1.deaf9",
+        "name": "",
+        "collection": "II1",
+        "operation": "aggregate",
+        "x": 620,
+        "y": 3100,
+        "wires": [
+            [
+                "af4684e1c0bf357c",
+                "c8672d1622ab5b45",
+                "cbb32aaca3b3bd42",
+                "46bd917ede88aa56",
+                "4f51ac1b6181578c"
+            ]
+        ]
+    },
+    {
+        "id": "af4684e1c0bf357c",
+        "type": "ui_text",
+        "z": "ccd8ad10.a1f6a",
+        "group": "a169802401a3dd11",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Média del periodo",
+        "format": "{{msg.payload[0].Tmedia | number:1 }}ºC",
+        "layout": "row-left",
+        "className": "",
+        "x": 1030,
+        "y": 3000,
+        "wires": []
+    },
+    {
+        "id": "c8672d1622ab5b45",
+        "type": "ui_text",
+        "z": "ccd8ad10.a1f6a",
+        "group": "a169802401a3dd11",
+        "order": 4,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Máxima del periodo",
+        "format": "{{msg.payload[0].Tmax | number:1 }}ºC",
+        "layout": "row-left",
+        "className": "",
+        "x": 1040,
+        "y": 3040,
+        "wires": []
+    },
+    {
+        "id": "cbb32aaca3b3bd42",
+        "type": "ui_text",
+        "z": "ccd8ad10.a1f6a",
+        "group": "a169802401a3dd11",
+        "order": 5,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Mínima del periodo",
+        "format": "{{msg.payload[0].Tmin | number:1 }}ºC",
+        "layout": "row-left",
+        "className": "",
+        "x": 1030,
+        "y": 3080,
+        "wires": []
+    },
+    {
+        "id": "8c56fc2f9bbf23fb",
+        "type": "comment",
+        "z": "ccd8ad10.a1f6a",
+        "name": "Controles para seleccionar fechas",
+        "info": "",
+        "x": 218.68574905395508,
+        "y": 2835.8183183670044,
+        "wires": []
+    },
+    {
+        "id": "4bf9742cd015fd19",
+        "type": "comment",
+        "z": "ccd8ad10.a1f6a",
+        "name": "Consultas agregadas",
+        "info": "",
+        "x": 194.47550582885742,
+        "y": 3041.360867500305,
+        "wires": []
+    },
+    {
+        "id": "b8403405bcea7f9b",
+        "type": "debug",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "x": 850,
+        "y": 3180,
+        "wires": []
+    },
+    {
+        "id": "46bd917ede88aa56",
+        "type": "debug",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "x": 990,
+        "y": 2940,
+        "wires": []
+    },
+    {
+        "id": "4f51ac1b6181578c",
+        "type": "ui_text",
+        "z": "ccd8ad10.a1f6a",
+        "group": "a169802401a3dd11",
+        "order": 6,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Número de datos",
+        "format": "{{msg.payload[0].datos }} muestras",
+        "layout": "row-left",
+        "className": "",
+        "x": 1030,
+        "y": 3120,
+        "wires": []
+    },
+    {
+        "id": "fefcb39b7af997f2",
+        "type": "ui_date_picker",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "label": "Fecha de inicio",
+        "group": "a169802401a3dd11",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "passthru": true,
+        "topic": "",
+        "topicType": "str",
+        "className": "",
+        "x": 206.4556007385254,
+        "y": 2896.7302017211914,
+        "wires": [
+            [
+                "bab4f1efd27b9404"
+            ]
+        ]
+    },
+    {
+        "id": "c4166b555e158c05",
+        "type": "ui_date_picker",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "label": "Fecha de final",
+        "group": "a169802401a3dd11",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "passthru": true,
+        "topic": "",
+        "x": 183.46413040161133,
+        "y": 2950.735980987549,
+        "wires": [
+            [
+                "2d8372399e0b4848"
+            ]
+        ]
+    },
+    {
+        "id": "8575328bca28b19b",
+        "type": "telegram command",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "command": "/LED",
+        "description": "",
+        "registercommand": false,
+        "language": "",
+        "scope": "default",
+        "bot": "bba8b2693149435b",
+        "strict": false,
+        "hasresponse": true,
+        "useregex": false,
+        "removeregexcommand": false,
+        "outputs": 2,
+        "x": 170,
+        "y": 2240,
+        "wires": [
+            [
+                "775aff0d06989554"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "775aff0d06989554",
+        "type": "function",
+        "z": "ccd8ad10.a1f6a",
+        "name": "Obtener valor del actuador",
+        "func": "var est_led= parseInt(msg.payload.content);\nvar id = msg.payload.chatId;\nmsg.payload = {};\nif((est_led >= 0 ) && (est_led <= 100 ))\n{   \n    msg.payload.level = est_led;\n    msg.payload.id = id;\n}\nelse{\n\nmsg.payload.type = \"message\";\nmsg.payload.content = \"❌ Por favor introduzca un valor entre 0 y 100\";\n}\n\nmsg.payload.chatId = id;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 500,
+        "y": 2240,
+        "wires": [
+            [
+                "f52444ddca0e48eb",
+                "6b8a2fd878717cf4"
+            ]
+        ]
+    },
+    {
+        "id": "d33edf85ea511595",
+        "type": "telegram command",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "command": "/SWITCH",
+        "description": "",
+        "registercommand": false,
+        "language": "",
+        "scope": "default",
+        "bot": "bba8b2693149435b",
+        "strict": false,
+        "hasresponse": true,
+        "useregex": false,
+        "removeregexcommand": false,
+        "outputs": 2,
+        "x": 180,
+        "y": 2320,
+        "wires": [
+            [
+                "09c99cd8f3b90cda",
+                "033853841c0b92e4"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "09c99cd8f3b90cda",
+        "type": "function",
+        "z": "ccd8ad10.a1f6a",
+        "name": "Obtener valor del actuador",
+        "func": "var est_sw= parseInt(msg.payload.content);\nvar id = msg.payload.chatId;\nmsg.payload = {};\nif((est_sw == 0 ) || (est_sw == 1 ))\n{ \n    msg.payload.level = est_sw;\n    msg.payload.id = id;\n}\nelse{\n\nmsg.payload.type = \"message\";\nmsg.payload.content = \"❌ Por favor introduzca o 0 o 1 para apagar o encender el SWITCH\";\n}\nmsg.payload.chatId = id;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 500,
+        "y": 2320,
+        "wires": [
+            [
+                "f52444ddca0e48eb",
+                "e08ad32ab767d545"
+            ]
+        ]
+    },
+    {
+        "id": "6f6fbe2e3a4044ea",
+        "type": "telegram command",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "command": "/valor_det",
+        "description": "",
+        "registercommand": false,
+        "language": "",
+        "scope": "default",
+        "bot": "bba8b2693149435b",
+        "strict": false,
+        "hasresponse": true,
+        "useregex": false,
+        "removeregexcommand": false,
+        "outputs": 2,
+        "x": 180,
+        "y": 1700,
+        "wires": [
+            [
+                "a1284aad79479d64"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "a1284aad79479d64",
+        "type": "function",
+        "z": "ccd8ad10.a1f6a",
+        "name": "mensaje explicativo",
+        "func": " msg.payload.content= \"Para conocer los datos de temperatura y humedad de los siguientes periodos, utilice los comandos asignados:\\n\\n⏱Número de horas previas hasta ahora: /horas + nº horas.\\n\\n📆Número de días previos hasta ahora: /dias + nº días.\\n\\n📅Número de semanas previas hasta ahora: /semanas + nº semanas.\\n\\nPor ejemplo: /dias 24\"\n return msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 510,
+        "y": 1680,
+        "wires": [
+            [
+                "828771135c01ac39"
+            ]
+        ]
+    },
+    {
+        "id": "496c5a6241714305",
+        "type": "telegram command",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "command": "/horas",
+        "description": "",
+        "registercommand": false,
+        "language": "",
+        "scope": "default",
+        "bot": "bba8b2693149435b",
+        "strict": false,
+        "hasresponse": true,
+        "useregex": false,
+        "removeregexcommand": false,
+        "outputs": 2,
+        "x": 270,
+        "y": 1780,
+        "wires": [
+            [
+                "65257db9bd82935b",
+                "821264f8034087d2"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "ae20a8a1d004e698",
+        "type": "telegram command",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "command": "/dias",
+        "description": "",
+        "registercommand": false,
+        "language": "",
+        "scope": "default",
+        "bot": "bba8b2693149435b",
+        "strict": false,
+        "hasresponse": true,
+        "useregex": false,
+        "removeregexcommand": false,
+        "outputs": 2,
+        "x": 270,
+        "y": 1820,
+        "wires": [
+            [
+                "6a2cc70807d9191f",
+                "821264f8034087d2"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "dfb4249ded677491",
+        "type": "telegram command",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "command": "/semanas",
+        "description": "",
+        "registercommand": false,
+        "language": "",
+        "scope": "default",
+        "bot": "bba8b2693149435b",
+        "strict": false,
+        "hasresponse": true,
+        "useregex": false,
+        "removeregexcommand": false,
+        "outputs": 2,
+        "x": 280,
+        "y": 1860,
+        "wires": [
+            [
+                "d11e70b1f27718be",
+                "821264f8034087d2"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "df88a90142a96c68",
+        "type": "function",
+        "z": "ccd8ad10.a1f6a",
+        "name": "Consulta dias",
+        "func": "if (msg.payload >0)\n{\ndias = msg.payload;\n\nvar ms_per_minute = 60000;\n// obtiene el timestamp actual\nvar ahora = new Date().getTime();\n// crear objeto fecha con la hora de hace 12 horas\nvar fecha = new Date(ahora-60*dias*24*ms_per_minute);\n\nvar inicio = new Date(fecha.getFullYear(),fecha.getMonth(),fecha.getDate(),fecha.getHours());\n\nmsg.payload=\n[\n    { \"$match\": { \"date\": { \"$gte\": inicio} } },\n    { \"$project\": {\n        \"_id\": 0,\n        \"date\": 1,\n        \"Temperatura\": \"$DHT11.temp\",\n        \"Humedad\": \"$DHT11.hum\",\n        \"Vcc\": \"$Vcc\",\n        }\n    },\n    { \"$group\": {\n        \"_id\": 0,\n        \"Tmedia\":{\"$avg\":\"$Temperatura\"},\n        \"Tmax\":  {\"$max\":\"$Temperatura\"},\n        \"Tmin\":  {\"$min\":\"$Temperatura\"},\n        \"datos\": {\"$sum\":1},\n        \"Hmedia\":{\"$avg\":\"$Humedad\"},\n        \"Hmax\":  {\"$max\":\"$Humedad\"},\n        \"Hmin\":  {\"$min\":\"$Humedad\"}\n    }},\n    { \"$sort\": {\"date\": 1} }\n];\n\nreturn msg;\n}\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 840,
+        "y": 1820,
+        "wires": [
+            [
+                "153f729e5b8e83d3"
+            ]
+        ]
+    },
+    {
+        "id": "55d87544822b7c00",
+        "type": "function",
+        "z": "ccd8ad10.a1f6a",
+        "name": "Consulta semana",
+        "func": "if (msg.payload >0)\n{\nsemanas = msg.payload;\n\nvar ms_per_minute = 60000;\n// obtiene el timestamp actual\nvar ahora = new Date().getTime();\n// crear objeto fecha con la hora de hace 12 horas\nvar semana = new Date(ahora-60*24*7*semanas*ms_per_minute);\n\nvar inicio = new Date(semana.getFullYear(),semana.getMonth(),semana.getDate(),semana.getHours());\n\n\n\nmsg.payload=\n[\n    { \"$match\": { \"date\": { \"$gte\": inicio} } },\n    { \"$project\": {\n        \"_id\": 0,\n        \"date\": 1,\n        \"Temperatura\": \"$DHT11.temp\",\n        \"Humedad\": \"$DHT11.hum\",\n        \"Vcc\": \"$Vcc\",\n        }\n    },\n    { \"$group\": {\n        \"_id\": 0,\n        \"Tmedia\":{\"$avg\":\"$Temperatura\"},\n        \"Tmax\":  {\"$max\":\"$Temperatura\"},\n        \"Tmin\":  {\"$min\":\"$Temperatura\"},\n        \"datos\": {\"$sum\":1},\n        \"Hmedia\":{\"$avg\":\"$Humedad\"},\n        \"Hmax\":  {\"$max\":\"$Humedad\"},\n        \"Hmin\":  {\"$min\":\"$Humedad\"}\n    }},\n    { \"$sort\": {\"date\": 1} }\n];\n\nreturn msg;\n}\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 850,
+        "y": 1860,
+        "wires": [
+            [
+                "153f729e5b8e83d3"
+            ]
+        ]
+    },
+    {
+        "id": "891abf25696e6b2c",
+        "type": "function",
+        "z": "ccd8ad10.a1f6a",
+        "name": "Datos obtenidos",
+        "func": "var TMed = msg.payload[0].Tmedia.toFixed(2);\nvar TMax = msg.payload[0].Tmax;\nvar TMin = msg.payload[0].Tmin;\n\nvar HMed = msg.payload[0].Hmedia.toFixed(2);\nvar HMax = msg.payload[0].Hmax;\nvar HMin = msg.payload[0].Hmin;\n\nvar datos = msg.payload[0].datos;\n\nmsg.payload = {};\nmsg.payload.chatId = global.get(\"chatId\");\nmsg.payload.type = \"message\";\nmsg.payload.content= \"📌TEMPERATURA\\n\\n📊Temperatura media: \"+TMed+\"ºC.\\n📈Temperatura máxima: \"+TMax+\"ºC.\\n📉Temperatura mínima: \"+TMin+\"ºC.\\n\\n📌HUMEDAD\\n\\n📊Humedad media: \"+HMed+\"%.\\n📈Humedad máxima: \"+HMax+\"%.\\n📉Humedad mínima: \"+HMin+\"%.\\n\\nSe han tomado \"+datos+\" datos hasta la fecha.\";\n \n return msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1380,
+        "y": 1820,
+        "wires": [
+            [
+                "828771135c01ac39",
+                "9859df288fefbfa5"
+            ]
+        ]
+    },
+    {
+        "id": "5736ec6282ffe136",
+        "type": "function",
+        "z": "ccd8ad10.a1f6a",
+        "name": "Consulta horas",
+        "func": "if (msg.payload >0)\n{\nhoras = msg.payload;\nmsg.payload = {};\n\nvar ms_per_minute = 60000;\n// obtiene el timestamp actual\nvar ahora = new Date().getTime();\n// crear objeto fecha con la hora de hace 12 horas\nvar fecha = new Date(ahora-60*horas*ms_per_minute);\n\nvar inicio = new Date(fecha.getFullYear(),fecha.getMonth(),fecha.getDate(),fecha.getHours());\n\nmsg.payload=\n[\n    { \"$match\": { \"date\": { \"$gte\": inicio} } },\n    { \"$project\": {\n        \"_id\": 0,\n        \"date\": 1,\n        \"Temperatura\": \"$DHT11.temp\",\n        \"Humedad\": \"$DHT11.hum\",\n        \"Vcc\": \"$Vcc\",\n        }\n    },\n    { \"$group\": {\n        \"_id\": 0,\n        \"Tmedia\":{\"$avg\":\"$Temperatura\"},\n        \"Tmax\":  {\"$max\":\"$Temperatura\"},\n        \"Tmin\":  {\"$min\":\"$Temperatura\"},\n        \"datos\": {\"$sum\":1},\n        \"Hmedia\":{\"$avg\":\"$Humedad\"},\n        \"Hmax\":  {\"$max\":\"$Humedad\"},\n        \"Hmin\":  {\"$min\":\"$Humedad\"}\n    }},\n    { \"$sort\": {\"date\": 1} }\n];\n\nreturn msg;\n}\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 840,
+        "y": 1780,
+        "wires": [
+            [
+                "153f729e5b8e83d3"
+            ]
+        ]
+    },
+    {
+        "id": "f52444ddca0e48eb",
+        "type": "telegram sender",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "bot": "bba8b2693149435b",
+        "haserroroutput": false,
+        "outputs": 1,
+        "x": 980,
+        "y": 2000,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "0adf96de113d7dda",
+        "type": "telegram sender",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "bot": "bba8b2693149435b",
+        "haserroroutput": false,
+        "outputs": 1,
+        "x": 860,
+        "y": 1700,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "6a2cc70807d9191f",
+        "type": "function",
+        "z": "ccd8ad10.a1f6a",
+        "name": "Obtener valor de dias",
+        "func": "var fecha= parseInt(msg.payload.content);\nvar id = msg.payload.chatId;\nmsg.payload = {};\nif((fecha > 0 ) && (fecha < 365))\n{ \n    msg.payload = fecha;\n\n}\nelse{\nmsg.payload = {};\nmsg.payload.type = \"message\";\nmsg.payload.content = \"❌Por favor introduzca un valor correcto\";\n}\n\nmsg.payload.chatId = id;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 500,
+        "y": 1820,
+        "wires": [
+            [
+                "df88a90142a96c68",
+                "0adf96de113d7dda"
+            ]
+        ]
+    },
+    {
+        "id": "9859df288fefbfa5",
+        "type": "debug",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1630,
+        "y": 1820,
+        "wires": []
+    },
+    {
+        "id": "65257db9bd82935b",
+        "type": "function",
+        "z": "ccd8ad10.a1f6a",
+        "name": "Obtener valor de horas",
+        "func": "var fecha= parseInt(msg.payload.content);\nvar id = msg.payload.chatId;\n\nmsg.payload = {};\nif((fecha > 0 ) && (fecha < 24))\n{ \n    msg.payload.fecha = fecha;\n\n}\nelse{\n\nmsg.payload.type = \"message\";\nmsg.payload.content = \"❌Por favor introduzca un valor correcto\";\n\n}\n\nmsg.payload.chatId = id;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 510,
+        "y": 1780,
+        "wires": [
+            [
+                "5736ec6282ffe136",
+                "0adf96de113d7dda"
+            ]
+        ]
+    },
+    {
+        "id": "d11e70b1f27718be",
+        "type": "function",
+        "z": "ccd8ad10.a1f6a",
+        "name": "Obtener valor de semanas",
+        "func": "var fecha= parseInt(msg.payload.content);\nmsg.payload = {};\nif((fecha > 0 ) && (fecha < 50))\n{ \n    msg.payload = fecha;\n return msg;\n}\nelse{\n    msg.payload = {};\nmsg.payload.type = \"message\";\nmsg.payload.content = \"❌Por favor introduzca un valor correcto\";\nreturn msg;\n};",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 520,
+        "y": 1860,
+        "wires": [
+            [
+                "55d87544822b7c00",
+                "0adf96de113d7dda"
+            ]
+        ]
+    },
+    {
+        "id": "153f729e5b8e83d3",
+        "type": "mongodb in",
+        "z": "ccd8ad10.a1f6a",
+        "mongodb": "3752afa1.deaf9",
+        "name": "",
+        "collection": "II1",
+        "operation": "aggregate",
+        "x": 1100,
+        "y": 1820,
+        "wires": [
+            [
+                "891abf25696e6b2c"
+            ]
+        ]
+    },
+    {
+        "id": "6b8a2fd878717cf4",
+        "type": "function",
+        "z": "ccd8ad10.a1f6a",
+        "name": "Number to JSON",
+        "func": "var led_level=msg.payload.level;\nvar id = msg.payload.id;\n\nvar data={\"level\":led_level, \"id\": id};\nnode.log(typeof data);\nmsg.payload= JSON.stringify(data);\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 870,
+        "y": 2240,
+        "wires": [
+            [
+                "25e8efc256a3f3ae",
+                "caeb8779fc59cf17"
+            ]
+        ]
+    },
+    {
+        "id": "25e8efc256a3f3ae",
+        "type": "mqtt out",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "topic": "II1/ESP_9745759/led/cmd",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "dfefd42be31cab40",
+        "x": 1140,
+        "y": 2240,
+        "wires": []
+    },
+    {
+        "id": "caeb8779fc59cf17",
+        "type": "debug",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1110,
+        "y": 2120,
+        "wires": []
+    },
+    {
+        "id": "e08ad32ab767d545",
+        "type": "function",
+        "z": "ccd8ad10.a1f6a",
+        "name": "Number to JSON",
+        "func": "var led_level=msg.payload.level;\nvar id = msg.payload.id;\n\nvar data={\"level\":led_level, \"id\": id};\nnode.log(typeof data);\nmsg.payload= JSON.stringify(data);\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 870,
+        "y": 2320,
+        "wires": [
+            [
+                "63d8233c3b6f761a",
+                "033853841c0b92e4"
+            ]
+        ]
+    },
+    {
+        "id": "63d8233c3b6f761a",
+        "type": "mqtt out",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "topic": "II1/ESP_9745759/switch/cmd",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "dfefd42be31cab40",
+        "x": 1170,
+        "y": 2320,
+        "wires": []
+    },
+    {
+        "id": "033853841c0b92e4",
+        "type": "debug",
+        "z": "ccd8ad10.a1f6a",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 930,
+        "y": 2460,
+        "wires": []
+    },
+    {
+        "id": "821264f8034087d2",
+        "type": "change",
+        "z": "ccd8ad10.a1f6a",
+        "name": "chatId",
+        "rules": [
+            {
+                "t": "set",
+                "p": "chatId",
+                "pt": "global",
+                "to": "payload.chatId",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 470,
+        "y": 1900,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "9eb2e0377b99b5a0",
+        "type": "comment",
+        "z": "ccd8ad10.a1f6a",
+        "name": "Obtención del id del chat para el envio de datos",
+        "info": "",
+        "x": 720,
+        "y": 1900,
+        "wires": []
+    },
+    {
+        "id": "3752afa1.deaf9",
+        "type": "mongodb",
+        "hostname": "iot.ac.uma.es",
+        "topology": "direct",
+        "connectOptions": "",
+        "port": "27017",
+        "db": "II1",
+        "name": ""
+    },
+    {
+        "id": "a34ffe7a.04009",
+        "type": "ui_group",
+        "name": "",
+        "tab": "e63432e4.6c1e",
+        "order": 1,
+        "disp": true,
+        "width": "13",
+        "collapse": false,
+        "className": ""
+    },
+    {
+        "id": "0c8bf2f642261bd9",
+        "type": "mqtt-broker",
+        "name": "Proyecto",
+        "broker": "iot.ac.uma.es",
+        "port": "1883",
+        "clientid": "",
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "sessionExpiry": ""
+    },
+    {
+        "id": "bba8b2693149435b",
+        "type": "telegram bot",
+        "botname": "IIgrupo1_bot",
+        "usernames": "",
+        "chatids": "",
+        "baseapiurl": "",
+        "updatemode": "polling",
+        "pollinterval": "300",
+        "usesocks": false,
+        "sockshost": "",
+        "socksport": "6667",
+        "socksusername": "anonymous",
+        "sockspassword": "",
+        "bothost": "",
+        "botpath": "",
+        "localbotport": "8443",
+        "publicbotport": "8443",
+        "privatekey": "",
+        "certificate": "",
+        "useselfsignedcertificate": false,
+        "sslterminated": false,
+        "verboselogging": false
+    },
+    {
+        "id": "a169802401a3dd11",
+        "type": "ui_group",
+        "name": "Agregaciones",
+        "tab": "5156c2435692281f",
+        "order": 1,
+        "disp": true,
+        "width": "10",
+        "collapse": false,
+        "className": ""
+    },
+    {
+        "id": "dfefd42be31cab40",
+        "type": "mqtt-broker",
+        "name": "",
+        "broker": "localhost",
+        "port": "1883",
+        "clientid": "",
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "sessionExpiry": ""
+    },
+    {
+        "id": "e63432e4.6c1e",
+        "type": "ui_tab",
+        "name": "Descarga de Datos",
+        "icon": "dashboard",
+        "order": 1,
+        "disabled": false,
+        "hidden": false
+    },
+    {
+        "id": "5156c2435692281f",
+        "type": "ui_tab",
+        "name": "Agregación",
+        "icon": "dashboard",
+        "order": 2,
+        "disabled": false,
+        "hidden": false
+    }
+]
