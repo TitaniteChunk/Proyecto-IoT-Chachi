@@ -249,7 +249,7 @@ void procesa_mensaje(char* topic, byte* payload, unsigned int length) {
     if(root.containsKey("SWITCH"))                                           // Comprobar si existe el campo/clave "SWITCH"
     { 
       if(strcmp(root["SWITCH"],"null")==0){}                                 // Comprobar que el contenido del mensaje no sea "null"
-      else {SWITCH = root["SWITCH"];} 
+      else {level_switch = root["SWITCH"];} 
     }
   }
   
@@ -348,7 +348,7 @@ void setup() {
   
   sprintf(topic_S_config, "II%s/ESP_%d/config", GRUPO, ESP.getChipId());
   sprintf(topic_S_ledcmd, "II%s/ESP_%d/led/cmd", GRUPO, ESP.getChipId());
-  sprintf(topic_S_switchcmd, "II%s/ESP_%d/swich/cmd", GRUPO, ESP.getChipId());   
+  sprintf(topic_S_switchcmd, "II%s/ESP_%d/switch/cmd", GRUPO, ESP.getChipId());   
   sprintf(topic_S_FOTA, "II%s/ESP_%d/FOTA", GRUPO, ESP.getChipId()); 
  
 //·····················································
@@ -458,6 +458,9 @@ void loop() {
       analogWrite(LED1,(estado_led*(-255.0)-100.0*-255.0)*(1/100.0));   
     }
   }
+
+  if(strcmp(level_switch,true)==0){analogWrite(LED1,255))}
+  if(strcmp(level_switch,false)==0){analogWrite(LED1,255))}
   
   
   if (ahora_mensaje - ultimo_mensaje >= envia*1000) 
