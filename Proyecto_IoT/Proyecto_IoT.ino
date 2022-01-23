@@ -70,7 +70,7 @@ char origen[16] = "MQTT";
 int level_led;
 int objetivo_led = 0;
 int estado_led = 0;
-int level_switch;
+bool level_switch;
 char ID[16];
 
 // VARIABLES GLOBALES PARA CONTROLAR LEDS Y BOTÓN
@@ -459,8 +459,8 @@ void loop() {
     }
   }
 
-  if(strcmp(level_switch,true)==0){analogWrite(LED1,255))}
-  if(strcmp(level_switch,false)==0){analogWrite(LED1,255))}
+  if(level_switch){analogWrite(LED1,0);}
+  else{analogWrite(LED1,255);}
   
   
   if (ahora_mensaje - ultimo_mensaje >= envia*1000) 
