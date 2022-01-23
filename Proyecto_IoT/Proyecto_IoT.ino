@@ -70,7 +70,7 @@ char origen[16] = "MQTT";
 int level_led;
 int objetivo_led = 0;
 int estado_led = 0;
-bool level_switch;
+int level_switch;
 char ID[16];
 
 // VARIABLES GLOBALES PARA CONTROLAR LEDS Y BOTÓN
@@ -459,26 +459,26 @@ void loop() {
     }
   }
 
-  if(level_switch){analogWrite(LED1,0);}
-  else{analogWrite(LED1,255);}
+  if(level_switch==1){analogWrite(LED2,0);}
+  else{analogWrite(LED2,255);}
   
   
   if (ahora_mensaje - ultimo_mensaje >= envia*1000) 
   {
-    delay(dht.getMinimumSamplingPeriod());                                  // Delay para no sobrecargar los sensores
+    delay(dht.getMinimumSamplingPeriod());                                                // Delay para no sobrecargar los sensores
 
-    hum = dht.getHumidity();                                      // Lectura de la humedad
+    hum = dht.getHumidity();                                                              // Lectura de la humedad
     if (hum<0||hum>100){printf(ERRORES, "El sensor de humedad está fallando");}
-    temp = dht.getTemperature();                               // Lectura de la temperatura
+    temp = dht.getTemperature();                                                          // Lectura de la temperatura
     if (temp<10||temp>70){printf(ERRORES, "El sensor de temperatura está fallando");}
-    Vcc = ESP.getVcc()/1000;                                      // Lectura del nivel del voltaje en milivoltios
+    Vcc = ESP.getVcc()/1000;                                                              // Lectura del nivel del voltaje en milivoltios
     if (Vcc<10||Vcc>70){printf(ERRORES, "El sensor de temperatura está fallando");}
-    bool wifi = WiFi.status();                                              // Comprueba conexión
-    RSSi = WiFi.RSSI();                                               // Comprueba RSSI
-    sprintf(IP, WiFi.localIP().toString().c_str());                         // Guarda IP
-    unsigned long tiempo = millis();                                                  // Guarda momento de la lecura
+    bool wifi = WiFi.status();                                                            // Comprueba conexión
+    RSSi = WiFi.RSSI();                                                                   // Comprueba RSSI
+    sprintf(IP, WiFi.localIP().toString().c_str());                                       // Guarda IP
+    unsigned long tiempo = millis();                                                      // Guarda momento de la lecura
     Uptime = tiempo - inicializacion;
-    ultimo_mensaje = ahora_mensaje;                                                 // Actualizar instancia del último mensaje
+    ultimo_mensaje = ahora_mensaje;                                                       // Actualizar instancia del último mensaje
     
 //·····················································
 
