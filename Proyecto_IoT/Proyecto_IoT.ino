@@ -71,7 +71,7 @@ int level_led;
 int objetivo_led = 0;
 int estado_led = 0;
 int level_switch;
-char ID[16] = "0000000000";
+char ID[16] = "nada";
 
 // VARIABLES GLOBALES PARA CONTROLAR LEDS Y BOTÓN
 int LED1 = 2;  
@@ -507,14 +507,17 @@ void loop() {
     json_led_status["CHIPID"] = CHIP_ID;
     json_led_status["LED"] = level_led;
     json_led_status["origen"] = origen;
-    json_led_status["id"] = ID;
+    if(strcmp(ID,"nada")!=0)
+      {json_led_status["id"] = ID;}
     SerializeComplex(topic_P_ledstatus,json_led_status);
 
     StaticJsonDocument<96> json_switch_status;
     json_switch_status["CHIPID"] = CHIP_ID;
     json_switch_status["SWITCH"] = level_switch;
     json_switch_status["origen"] = origen;
-    json_led_status["id"] = ID;
+    if(strcmp(ID,"nada")!=0)
+      {json_switch_status["id"] = ID;
+      sprintf(ID,"nada");}
     SerializeComplex(topic_P_switchstatus,json_switch_status);
 
     if (strcmp(ERRORES,"nada")!=0)
