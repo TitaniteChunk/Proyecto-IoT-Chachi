@@ -20,8 +20,8 @@ ADC_MODE(ADC_VCC)
 
 // VARIABLES GLOBALES PARA CONFIGURAR WIFI
 
-const char* ssid = "infind";
-const char* password = "1518wifi";
+const char* ssid = "MiFibra-5D8B";
+const char* password = "baYxK3N7";
 const char* mqtt_server = "iot.ac.uma.es";
 const char* mqtt_user = "II1";
 const char* mqtt_pass = "7o56oYsu";
@@ -290,7 +290,8 @@ void procesa_mensaje(char* topic, byte* payload, unsigned int length) {
   {
     if(root.containsKey("actualiza"))                                            // Comprobar si existe el campo/clave "envia"
     { 
-      sprintf(actualizar,root["actualiza"]); 
+      sprintf(actualizar,root["actualiza"]);
+      if (strcmp(actualizar,"true")){intenta_OTA();} 
     }     
   }
 
@@ -521,15 +522,14 @@ void loop() {
     SerializeComplex(topic_P_switchstatus,json_error);
     }
   }
-  if (strcmp(actualizar,"true"))
+  
+  if (actualiza != 0)
   {
-    if (actualiza != 0)
+    if (ahora_mensaje - ultima_actualizacion >= actualiza*1000)
     {
-      if (ahora_mensaje - ultima_actualizacion >= actualiza*1000)
-      {
-        ultima_actualizacion = ahora_mensaje;
-        intenta_OTA();
-      }
+      ultima_actualizacion = ahora_mensaje;
+      intenta_OTA();
     }
-  }   
+  }
+     
 }
