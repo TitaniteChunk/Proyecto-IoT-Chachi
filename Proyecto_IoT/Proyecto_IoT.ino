@@ -341,16 +341,16 @@ void setup() {
 
   sprintf(CHIP_ID, "ESP_%d", ESP.getChipId());
 
-  sprintf(topic_P_conexion, "II%s/ESP_%d/conexion", GRUPO, ESP.getChipId());
-  sprintf(topic_P_datos, "II%s/ESP_%d/datos", GRUPO, ESP.getChipId());
-  sprintf(topic_P_ledstatus, "II%s/ESP_%d/led/status", GRUPO, ESP.getChipId());
-  sprintf(topic_P_switchstatus, "II%s/ESP_%d/switch/status", GRUPO, ESP.getChipId());
-  sprintf(topic_P_error, "II%s/ESP_%d/error", GRUPO, ESP.getChipId());
+  sprintf(topic_P_conexion, "II%s/ESP%d/conexion", GRUPO, ESP.getChipId());
+  sprintf(topic_P_datos, "II%s/ESP%d/datos", GRUPO, ESP.getChipId());
+  sprintf(topic_P_ledstatus, "II%s/ESP%d/led/status", GRUPO, ESP.getChipId());
+  sprintf(topic_P_switchstatus, "II%s/ESP%d/switch/status", GRUPO, ESP.getChipId());
+  sprintf(topic_P_error, "II%s/ESP%d/error", GRUPO, ESP.getChipId());
   
-  sprintf(topic_S_config, "II%s/ESP_%d/config", GRUPO, ESP.getChipId());
-  sprintf(topic_S_ledcmd, "II%s/ESP_%d/led/cmd", GRUPO, ESP.getChipId());
-  sprintf(topic_S_switchcmd, "II%s/ESP_%d/switch/cmd", GRUPO, ESP.getChipId());   
-  sprintf(topic_S_FOTA, "II%s/ESP_%d/FOTA", GRUPO, ESP.getChipId()); 
+  sprintf(topic_S_config, "II%s/ESP%d/config", GRUPO, ESP.getChipId());
+  sprintf(topic_S_ledcmd, "II%s/ESP%d/led/cmd", GRUPO, ESP.getChipId());
+  sprintf(topic_S_switchcmd, "II%s/ESP%d/switch/cmd", GRUPO, ESP.getChipId());   
+  sprintf(topic_S_FOTA, "II%s/ESP%d/FOTA", GRUPO, ESP.getChipId()); 
  
 //·····················································
   
