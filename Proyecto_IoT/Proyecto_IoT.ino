@@ -498,7 +498,7 @@ void loop() {
       json_datos["LED"] = level_led;
       json_datos["SWITCH"] = level_switch;
     JsonObject Wifi = json_datos.createNestedObject("Wifi");
-      Wifi["SSId"] = "infind";
+      Wifi["SSId"] = ssid;
       Wifi["IP"] = IP;
       Wifi["RSSI"] = RSSi;
     SerializeComplex(topic_P_datos,json_datos);
