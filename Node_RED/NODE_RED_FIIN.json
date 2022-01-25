@@ -3531,7 +3531,7 @@
         "position": "top left",
         "displayTime": "5",
         "highlight": "",
-        "sendall": true,
+        "sendall": false,
         "outputs": 0,
         "ok": "OK",
         "cancel": "",
@@ -7501,7 +7501,7 @@
         "rules": [
             {
                 "t": "set",
-                "p": "temp_max",
+                "p": "max_temp",
                 "pt": "flow",
                 "to": "payload.tmax",
                 "tot": "msg"
@@ -7526,7 +7526,7 @@
         "rules": [
             {
                 "t": "set",
-                "p": "temp_min",
+                "p": "min_temp",
                 "pt": "flow",
                 "to": "payload.tmin",
                 "tot": "msg"
@@ -7668,7 +7668,7 @@
         "type": "function",
         "z": "d43d9cbcc461780f",
         "name": "Comprobación",
-        "func": "var Temp = msg.payload[0].Temperatura;\nvar PLACA = msg.payload[0].CHIPID;\nvar Hum = msg.payload[0].Humedad;\n\nvar ms_per_minute = 60000;\n// obtiene el timestamp actual\nvar ahora = new Date().getTime();\n// crear objeto fecha con la hora de hace 12 horas\nvar fecha = new Date(ahora - ms_per_minute);\n\nvar inicio = new Date(fecha.getFullYear(),fecha.getMonth(),fecha.getDate(),fecha.getHours());\n\nif (msg.payload[0].date >= inicio) //Para que no compruebe fechas pasadas\n{\nif (Temp > flow.get(\"temp_max\"))\n{\nmsg.payload = {};\nmsg.payload.chatId = -1001705665908;\nmsg.payload.type = \"message\";\nmsg.payload.content= \"⚠️ TEMPERATURA POR ENCIMA DEL LÍMITE ⚠️\\n\\nLa placa \"+PLACA+\" posee una temperatura de \"+Temp+\"ºC, superior al límite \"+flow.get(\"temp_max\")+\"ºC.\";\n \n return msg;\n}\nelse if (Temp < flow.get(\"temp_min\"))\n{\n    msg.payload.chatId = -1001705665908;\n    msg.payload.type = \"message\";\nmsg.payload.content= \"⚠️ TEMPERATURA POR DEBAJO DEL LÍMITE ⚠️\\n\\nLa placa \"+PLACA+\" posee una temperatura de \"+Temp+\"ºC, inferior al límite \"+flow.get(\"temp_min\")+\"ºC.\";\n\n    return msg;\n}\nelse if (Hum > flow.get(\"hum_max\"))\n{\n    msg.payload.chatId = -1001705665908;\n    msg.payload.type = \"message\";\nmsg.payload.content= \"⚠️ HUMEDAD POR ENCIMA DEL LÍMITE ⚠️\\n\\nLa placa \"+PLACA+\" posee una humedad del \"+Hum+\"%, superior al límite \"+flow.get(\"hum_max\")+\"º%.\";\n\n    return msg;\n}\nelse if (Hum < flow.get(\"hum_min\"))\n{\n    msg.payload.chatId = -1001705665908;\n    msg.payload.type = \"message\";\nmsg.payload.content= \"⚠️ HUMEDAD POR DEBAJO DEL LÍMITE ⚠️\\n\\nLa placa \"+PLACA+\" posee una humedad del \"+Hum+\"º% inferior al límite \"+flow.get(\"hum_min\")+\"%.\";\n\n    return msg;\n}\n}",
+        "func": "var Temp = msg.payload[0].Temperatura;\nvar PLACA = msg.payload[0].CHIPID;\nvar Hum = msg.payload[0].Humedad;\n\nvar ms_per_minute = 60000;\n// obtiene el timestamp actual\nvar ahora = new Date().getTime();\n// crear objeto fecha con la hora de hace 12 horas\nvar fecha = new Date(ahora - ms_per_minute);\n\nvar inicio = new Date(fecha.getFullYear(),fecha.getMonth(),fecha.getDate(),fecha.getHours());\n\nif (msg.payload[0].date >= inicio) //Para que no compruebe fechas pasadas\n{\nif (Temp > flow.get(\"max_temp\"))\n{\nmsg.payload = {};\nmsg.payload.chatId = -1001705665908;\nmsg.payload.type = \"message\";\nmsg.payload.content= \"⚠️ TEMPERATURA POR ENCIMA DEL LÍMITE ⚠️\\n\\nLa placa \"+PLACA+\" posee una temperatura de \"+Temp+\"ºC, superior al límite \"+flow.get(\"max_temp\")+\"ºC.\";\n \n return msg;\n}\nelse if (Temp < flow.get(\"min_temp\"))\n{\n    msg.payload.chatId = -1001705665908;\n    msg.payload.type = \"message\";\nmsg.payload.content= \"⚠️ TEMPERATURA POR DEBAJO DEL LÍMITE ⚠️\\n\\nLa placa \"+PLACA+\" posee una temperatura de \"+Temp+\"ºC, inferior al límite \"+flow.get(\"min_temp\")+\"ºC.\";\n\n    return msg;\n}\nelse if (Hum > flow.get(\"max_hum\"))\n{\n    msg.payload.chatId = -1001705665908;\n    msg.payload.type = \"message\";\nmsg.payload.content= \"⚠️ HUMEDAD POR ENCIMA DEL LÍMITE ⚠️\\n\\nLa placa \"+PLACA+\" posee una humedad del \"+Hum+\"%, superior al límite \"+flow.get(\"max_hum\")+\"º%.\";\n\n    return msg;\n}\nelse if (Hum < flow.get(\"min_hum\"))\n{\n    msg.payload.chatId = -1001705665908;\n    msg.payload.type = \"message\";\nmsg.payload.content= \"⚠️ HUMEDAD POR DEBAJO DEL LÍMITE ⚠️\\n\\nLa placa \"+PLACA+\" posee una humedad del \"+Hum+\"º% inferior al límite \"+flow.get(\"min_hum\")+\"%.\";\n\n    return msg;\n}\n}",
         "outputs": 1,
         "noerr": 0,
         "initialize": "",
@@ -7830,7 +7830,7 @@
         "rules": [
             {
                 "t": "set",
-                "p": "hum_max",
+                "p": "max_hum",
                 "pt": "flow",
                 "to": "payload.hmax",
                 "tot": "msg"
@@ -7855,7 +7855,7 @@
         "rules": [
             {
                 "t": "set",
-                "p": "hum_min",
+                "p": "min_hum",
                 "pt": "flow",
                 "to": "payload.hmin",
                 "tot": "msg"
@@ -7909,11 +7909,7 @@
         "willRetain": "false",
         "willPayload": "",
         "willMsg": {},
-        "sessionExpiry": "",
-        "credentials": {
-            "user": "II1",
-            "password": "7o56oYsu"
-        }
+        "sessionExpiry": ""
     },
     {
         "id": "8c10952216336c2b",
@@ -8000,8 +7996,7 @@
         "connectOptions": "",
         "port": "27017",
         "db": "II1",
-        "name": "",
-        "credentials": {}
+        "name": ""
     },
     {
         "id": "0c8bf2f642261bd9",
