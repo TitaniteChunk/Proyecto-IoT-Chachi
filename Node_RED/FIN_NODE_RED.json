@@ -7281,7 +7281,7 @@
         "type": "function",
         "z": "d43d9cbcc461780f",
         "name": "Aviso cambio del SWITCH",
-        "func": "var cambio = msg.payload.level;\nvar actual = global.get(\"SWITCH\");\nvar cambio_sw;\nif ((cambio == 1) || (cambio ==0))\n{\nif (cambio != actual)\n{\n    \nmsg.payload.type = \"message\";\nmsg.payload.content = \" Modificación del SWITCH💡 de la placa: \"+global.get(\"placa_selec\")+\"\\n\\nEstado actual: \"+String(cambio_sw)+\" \";\nmsg.payload.chatId = String(-1001705665908) ;\nreturn msg;\n}}\n",
+        "func": "var cambio = msg.payload.level;\nvar actual = global.get(\"SWITCH\");\nvar cambio_sw;\nif ((cambio == 1) || (cambio ==0))\n{\nif (cambio != actual)\n{\n    if (cambio == 1)\n    {cambio_sw = \"ON\"}else{cambio_sw = \"OFF\"}\n    \nmsg.payload.type = \"message\";\nmsg.payload.content = \" Modificación del SWITCH💡 de la placa: \"+global.get(\"placa_selec\")+\"\\n\\nEstado actual: \"+String(cambio_sw)+\" \";\nmsg.payload.chatId = String(-1001705665908) ;\nreturn msg;\n}}\n",
         "outputs": 1,
         "noerr": 0,
         "initialize": "",
