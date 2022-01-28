@@ -62,7 +62,7 @@ int SWITCH;
 char SSId[16];
 char IP[16];
 int RSSi;
-int envia = 10;
+int envia = 30;
 int actualiza = 0;
 char actualizar[16] = "false";
 int velocidad = 50;
