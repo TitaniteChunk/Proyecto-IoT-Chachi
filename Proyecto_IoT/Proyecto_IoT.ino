@@ -20,8 +20,8 @@ ADC_MODE(ADC_VCC)
 
 // VARIABLES GLOBALES PARA CONFIGURAR WIFI
 
-const char* ssid = "MOVISTAR_BC6F";
-const char* password = "F5A1C04240EE5F6E94F6";
+const char* ssid = "MiFibra-5D8B";
+const char* password = "baYxK3N7";
 const char* mqtt_server = "iot.ac.uma.es";
 const char* mqtt_user = "II1";
 const char* mqtt_pass = "7o56oYsu";
@@ -64,7 +64,7 @@ char IP[16];
 int RSSi;
 int envia = 30;
 int actualiza = 0;
-char actualizar[16] = "false";
+bool actualizar;
 int velocidad = 50;
 char origen[16] = "MQTT";
 int level_led;
@@ -217,40 +217,36 @@ void procesa_mensaje(char* topic, byte* payload, unsigned int length) {
   {
     if(root.containsKey("envia"))                                            // Comprobar si existe el campo/clave "envia"
     { 
-      if(strcmp(root["envia"],"null")==0){}                                  // Comprobar que el contenido del mensaje no sea "null"
+      if(root["envia"]!=0){}                                  // Comprobar que el contenido del mensaje no sea "null"
       else {envia = root["envia"];} 
     }
    
     if(root.containsKey("actualiza"))                                        // Comprobar si existe el campo/clave "actualiza"
     { 
-      if(strcmp(root["actualiza"],"null")==0){}                              // Comprobar que el contenido del mensaje no sea "null"
+      if(root["actualiza"]!=0){}                              // Comprobar que el contenido del mensaje no sea "null"
       else 
       {
         actualiza = root["actualiza"];
-        if (actualiza != 0)
-        {
-        sprintf(actualizar,"true");
-        }
-      } 
+      }
+       
     }
  
     if(root.containsKey("velocidad"))                                        // Comprobar si existe el campo/clave "velocidad"
     { 
-      if(strcmp(root["velocidad"],"null")==0){}                              // Comprobar que el contenido del mensaje no sea "null"
+      if(root["velocidad"]!=0){}                                              // Comprobar que el contenido del mensaje no sea "null"
       else {velocidad = root["velocidad"];} 
     }
 
     if(root.containsKey("LED"))                                              // Comprobar si existe el campo/clave "LED"
-    { 
-      if(strcmp(root["LED"],"null")==0){}                                    // Comprobar que el contenido del mensaje no sea "null"
-      else {LED = root["LED"];} 
+    {                                              
+    LED = root["LED"]; 
     }
 
     if(root.containsKey("SWITCH"))                                           // Comprobar si existe el campo/clave "SWITCH"
     { 
-      if(strcmp(root["SWITCH"],"null")==0){}                                 // Comprobar que el contenido del mensaje no sea "null"
-      else {level_switch = root["SWITCH"];} 
+    level_switch = root["SWITCH"];
     }
+    
   }
   
 //·····················································
@@ -290,8 +286,8 @@ void procesa_mensaje(char* topic, byte* payload, unsigned int length) {
   {
     if(root.containsKey("actualiza"))                                            // Comprobar si existe el campo/clave "envia"
     { 
-      sprintf(actualizar,root["actualiza"]);
-      if (strcmp(actualizar,"true")){intenta_OTA();} 
+      actualizar = root["actualiza"];
+      if (actualizar){intenta_OTA();} 
     }     
   }
 
