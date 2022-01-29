@@ -217,23 +217,18 @@ void procesa_mensaje(char* topic, byte* payload, unsigned int length) {
   {
     if(root.containsKey("envia"))                                            // Comprobar si existe el campo/clave "envia"
     { 
-      if(root["envia"]!=0){}                                  // Comprobar que el contenido del mensaje no sea "null"
+      if(root["envia"]==0){}                                  // Comprobar que el contenido del mensaje no sea "null"
       else {envia = root["envia"];} 
     }
    
     if(root.containsKey("actualiza"))                                        // Comprobar si existe el campo/clave "actualiza"
     { 
-      if(root["actualiza"]!=0){}                              // Comprobar que el contenido del mensaje no sea "null"
-      else 
-      {
-        actualiza = root["actualiza"];
-      }
-       
+        actualiza = root["actualiza"];      
     }
  
     if(root.containsKey("velocidad"))                                        // Comprobar si existe el campo/clave "velocidad"
     { 
-      if(root["velocidad"]!=0){}                                              // Comprobar que el contenido del mensaje no sea "null"
+      if(root["velocidad"]==0){}                                              // Comprobar que el contenido del mensaje no sea "null"
       else {velocidad = root["velocidad"];} 
     }
 
