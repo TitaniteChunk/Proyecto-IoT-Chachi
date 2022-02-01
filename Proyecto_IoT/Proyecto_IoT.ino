@@ -241,7 +241,8 @@ void procesa_mensaje(char* topic, byte* payload, unsigned int length) {
 
     if(root.containsKey("LED"))                                              // Comprobar si existe el campo/clave "LED"
     {                                              
-    LED = root["LED"]; 
+      if (pulsacion == 1){objetivo_led = root["LED"];}
+      level_led = root["LED"]; 
     }
 
     if(root.containsKey("SWITCH"))                                           // Comprobar si existe el campo/clave "SWITCH"
