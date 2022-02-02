@@ -8053,7 +8053,7 @@
         "type": "function",
         "z": "eba971ebbb85326f",
         "name": "Consulta",
-        "func": "// fecha por defecto es hoy\nvar ahora = new Date();\n// pillo los globales si los hay, si no la fecha de hoy\nvar desde = new Date(global.get(\"inicio\") || ahora);\nvar hasta = new Date(global.get(\"final\") || ahora); \n// el día de inicio desde las cero horas\nvar inicio = new Date(desde.getFullYear(),desde.getMonth(),desde.getDate(),0,0,0,0);\n// el día final es hasta final del día\nvar final = new Date(hasta.getFullYear(),hasta.getMonth(),hasta.getDate(),23,59,59,999);\n\nvar placa = String(global.get(\"placa\"));\n\nmsg.payload=\n[\n    { \"$match\": {$and:[ {\"date\": { \"$gte\": inicio , \"$lte\": final } },{\"CHIPID\":placa} ]}},\n   \n   { \"$project\": {\n        \"_id\": 0,\n        \"date\": 1,\n        \"Temperatura\": \"$DHT11.temp\",\n        \"Humedad\": \"$DHT11.hum\",\n        }\n    },\n{ \"$group\": {\n        \"_id\": 0,\n        \"Tmedia\":{\"$avg\":\"$Temperatura\"},\n        \"Tmax\":  {\"$max\":\"$Temperatura\"},\n        \"Tmin\":  {\"$min\":\"$Temperatura\"},\n        \"datos\": {\"$sum\":1},\n        \"Hmedia\":{\"$avg\":\"$Humedad\"},\n        \"Hmax\":  {\"$max\":\"$Humedad\"},\n        \"Hmin\":  {\"$min\":\"$Humedad\"}\n    }},\n    { \"$sort\": {\"date\": -1} },\n \n];\nreturn msg;\n",
+        "func": "// fecha por defecto es hoy\nvar ahora = new Date();\n// pillo los globales si los hay, si no la fecha de hoy\nvar desde = new Date(global.get(\"inicio\") || ahora);\nvar hasta = new Date(global.get(\"fin\") || ahora); \n// el día de inicio desde las cero horas\nvar inicio = new Date(desde.getFullYear(),desde.getMonth(),desde.getDate(),0,0,0,0);\n// el día final es hasta final del día\nvar final = new Date(hasta.getFullYear(),hasta.getMonth(),hasta.getDate(),23,59,59,999);\n\nvar placa = String(global.get(\"placa\"));\n\nmsg.payload=\n[\n    { \"$match\": {$and:[ {\"date\": { \"$gte\": inicio , \"$lte\": final } },{\"CHIPID\":placa} ]}},\n   \n   { \"$project\": {\n        \"_id\": 0,\n        \"date\": 1,\n        \"Temperatura\": \"$DHT11.temp\",\n        \"Humedad\": \"$DHT11.hum\",\n        }\n    },\n{ \"$group\": {\n        \"_id\": { \n        \"$dateFromParts\" : {\n            \"year\": { \"$year\": \"$date\" }, \n            \"month\": { \"$month\": \"$date\" },\n            \"day\": { \"$dayOfMonth\": \"$date\" }\n        }},\n        \"Tmedia\":{\"$avg\":\"$Temperatura\"},\n        \"Tmax\":  {\"$max\":\"$Temperatura\"},\n        \"Tmin\":  {\"$min\":\"$Temperatura\"},\n        \"datos\": {\"$sum\":1},\n        \"Hmedia\":{\"$avg\":\"$Humedad\"},\n        \"Hmax\":  {\"$max\":\"$Humedad\"},\n        \"Hmin\":  {\"$min\":\"$Humedad\"}\n    }},\n    { \"$sort\": {\"date\": -1} },\n \n];\nreturn msg;\n\n\n",
         "outputs": 1,
         "noerr": 0,
         "initialize": "",
@@ -8084,7 +8084,9 @@
                 "d6dc5a4fcd176d96",
                 "122b89e053a697d9",
                 "03b95bb15b2079d4",
-                "3d84b28f9342cb14"
+                "3d84b28f9342cb14",
+                "c5f4175937e63f76",
+                "0f45629a16172cb6"
             ]
         ]
     },
@@ -8346,7 +8348,7 @@
         "type": "ui_text",
         "z": "eba971ebbb85326f",
         "group": "ecb07c084f7a63f5",
-        "order": 17,
+        "order": 18,
         "width": 0,
         "height": 0,
         "name": "",
@@ -8363,7 +8365,7 @@
         "type": "ui_text",
         "z": "eba971ebbb85326f",
         "group": "ecb07c084f7a63f5",
-        "order": 16,
+        "order": 17,
         "width": 0,
         "height": 0,
         "name": "",
@@ -8380,7 +8382,7 @@
         "type": "ui_text",
         "z": "eba971ebbb85326f",
         "group": "ecb07c084f7a63f5",
-        "order": 19,
+        "order": 20,
         "width": 0,
         "height": 0,
         "name": "",
@@ -8397,7 +8399,7 @@
         "type": "ui_text",
         "z": "eba971ebbb85326f",
         "group": "ecb07c084f7a63f5",
-        "order": 20,
+        "order": 21,
         "width": 0,
         "height": 0,
         "name": "",
@@ -8536,14 +8538,14 @@
         "type": "function",
         "z": "eba971ebbb85326f",
         "name": "Umbral de Temperatura",
-        "func": "var umbral = flow.get(\"max_temp\");\n// fecha por defecto es hoy\nvar ahora = new Date();\n// pillo los globales si los hay, si no la fecha de hoy\nvar desde = new Date(global.get(\"inicio\") || ahora);\nvar hasta = new Date(global.get(\"fin\") || ahora); \n// el día de inicio desde las cero horas\nvar inicio = new Date(desde.getFullYear(),desde.getMonth(),desde.getDate(),0,0,0,0);\n// el día final es hasta final del día\nvar final = new Date(hasta.getFullYear(),hasta.getMonth(),hasta.getDate(),23,59,59,999);\n\nvar placa = String(global.get(\"placa\"));\n\nmsg.payload=\n[\n    { \"$match\": {$and:[ {\"date\": { \"$gte\": inicio , \"$lte\": final } },{\"CHIPID\":placa},{\"DHT11.temp\": {\"$gte\":umbral}} ]}},\n   \n    { \"$project\": {\n        \"_id\": 0,\n        \"date\": 1,\n        \"Temperatura\": \"$DHT11.temp\",\n        \"Humedad\": \"$DHT11.hum\",\n        \"Vcc\": \"$Vcc\",\n        }\n    },\n    { \"$sort\": {\"date\": 1} }\n];\n\nreturn msg;\n\n",
+        "func": "var umbral = flow.get(\"max_temp\");\n// fecha por defecto es hoy\nvar ahora = new Date();\n// pillo los globales si los hay, si no la fecha de hoy\nvar desde = new Date(global.get(\"inicio\") || ahora);\nvar hasta = new Date(global.get(\"fin\") || ahora); \n// el día de inicio desde las cero horas\nvar inicio = new Date(desde.getFullYear(),desde.getMonth(),desde.getDate(),0,0,0,0);\n// el día final es hasta final del día\nvar final = new Date(hasta.getFullYear(),hasta.getMonth(),hasta.getDate(),23,59,59,999);\n\nvar placa = String(global.get(\"placa\"));\n\nmsg.payload=\n[\n    { \"$match\": {$and:[ {\"date\": { \"$gte\": inicio , \"$lte\": final } },{\"CHIPID\":placa},{\"DHT11.temp\": {\"$gte\":umbral}} ]}},\n   \n    { \"$project\": {\n        \"_id\": 0,\n        \"date\": 1,\n        \"Temperatura\": \"$DHT11.temp\",\n        \"Humedad\": \"$DHT11.hum\",\n        \"Vcc\": \"$Vcc\",\n        }\n    },\n    { \"$sort\": {\"date\": 1} }\n];\n\nreturn msg;\n\n\n",
         "outputs": 1,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 190,
-        "y": 4180,
+        "x": 250,
+        "y": 4240,
         "wires": [
             [
                 "fdd9774521ad7bbc"
@@ -8556,7 +8558,7 @@
         "z": "eba971ebbb85326f",
         "group": "ecb07c084f7a63f5",
         "name": "Registro de Temperaturas superiores al UMBRAL",
-        "order": 23,
+        "order": 24,
         "width": 16,
         "height": 4,
         "format": "<div ng-bind-html=\"msg.payload\"></div>",
@@ -8565,7 +8567,7 @@
         "resendOnRefresh": false,
         "templateScope": "local",
         "className": "",
-        "x": 1270,
+        "x": 1250,
         "y": 4240,
         "wires": [
             []
@@ -8582,8 +8584,8 @@
         "syntax": "mustache",
         "template": " <h1>Registros de Temperaturas superiores al límite: </h1>\n <ul>\n{{#payload}}\n  <li>{{date}} : {{Temperatura}}ºC, </li>\n{{/payload}}\n </ul>\n \n",
         "output": "str",
-        "x": 800,
-        "y": 4300,
+        "x": 880,
+        "y": 4240,
         "wires": [
             [
                 "d58d44761cc6b9df"
@@ -8596,8 +8598,8 @@
         "z": "eba971ebbb85326f",
         "name": "Consulta de Temperaturas superiores a un Umbral",
         "info": "En esta parte del flujo cada vez que llegan datos y se actualizan en la base de datos, se consulta en la base de datos el último registro (sólo el último) y se muestra en el dashboard las principales variables del último registro (temperatura, humedad, fecha, etc.)\n\n",
-        "x": 230,
-        "y": 4140,
+        "x": 290,
+        "y": 4200,
         "wires": []
     },
     {
@@ -8608,12 +8610,11 @@
         "name": "",
         "collection": "Proyecto1_Datos",
         "operation": "aggregate",
-        "x": 490,
-        "y": 4180,
+        "x": 550,
+        "y": 4240,
         "wires": [
             [
-                "d6c9e804f2611601",
-                "cb0eaec840e0a40e"
+                "d6c9e804f2611601"
             ]
         ]
     },
@@ -8745,8 +8746,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 170,
-        "y": 4240,
+        "x": 230,
+        "y": 4300,
         "wires": [
             [
                 "9c1c2179446cb3cf"
@@ -8761,8 +8762,8 @@
         "name": "",
         "collection": "Proyecto1_Datos",
         "operation": "aggregate",
-        "x": 470,
-        "y": 4240,
+        "x": 530,
+        "y": 4300,
         "wires": [
             [
                 "e7129b3aa5d074c9"
@@ -8780,8 +8781,8 @@
         "syntax": "mustache",
         "template": " <h1>Registros de temperaturas inferiores al límite: </h1>\n <ul>\n{{#payload}}\n  <li>{{date}} : {{Temperatura }}ºC, </li>\n{{/payload}}\n </ul>",
         "output": "str",
-        "x": 780,
-        "y": 4360,
+        "x": 860,
+        "y": 4300,
         "wires": [
             [
                 "bee70fcfd5f5a55f"
@@ -8803,7 +8804,7 @@
         "resendOnRefresh": false,
         "templateScope": "local",
         "className": "",
-        "x": 1250,
+        "x": 1230,
         "y": 4300,
         "wires": [
             []
@@ -8820,8 +8821,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 130,
-        "y": 4300,
+        "x": 190,
+        "y": 4360,
         "wires": [
             [
                 "95ebdb44b3f11cb4"
@@ -8836,8 +8837,8 @@
         "name": "",
         "collection": "Proyecto1_Datos",
         "operation": "aggregate",
-        "x": 450,
-        "y": 4300,
+        "x": 510,
+        "y": 4360,
         "wires": [
             [
                 "2d84274484fdd04d"
@@ -8855,8 +8856,8 @@
         "syntax": "mustache",
         "template": " <h1>Registros de humedades superiores al límite: </h1>\n <ul>\n{{#payload}}\n  <li>{{date}} : {{Humedad }}%, </li>\n{{/payload}}\n </ul>",
         "output": "str",
-        "x": 760,
-        "y": 4420,
+        "x": 840,
+        "y": 4360,
         "wires": [
             [
                 "e496faae45c199dc"
@@ -8869,7 +8870,7 @@
         "z": "eba971ebbb85326f",
         "group": "ecb07c084f7a63f5",
         "name": "Registro de Temperaturas superiores al UMBRAL",
-        "order": 29,
+        "order": 28,
         "width": 16,
         "height": 4,
         "format": "<div ng-bind-html=\"msg.payload\"></div>",
@@ -8878,7 +8879,7 @@
         "resendOnRefresh": false,
         "templateScope": "local",
         "className": "",
-        "x": 1230,
+        "x": 1210,
         "y": 4360,
         "wires": [
             []
@@ -8895,8 +8896,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 120,
-        "y": 4360,
+        "x": 180,
+        "y": 4420,
         "wires": [
             [
                 "91104fbaf788f6a6"
@@ -8911,8 +8912,8 @@
         "name": "",
         "collection": "Proyecto1_Datos",
         "operation": "aggregate",
-        "x": 430,
-        "y": 4360,
+        "x": 490,
+        "y": 4420,
         "wires": [
             [
                 "6ceb06590f41024c"
@@ -8930,8 +8931,8 @@
         "syntax": "mustache",
         "template": " <h1>Registros de humedades inferiores al límite: </h1>\n <ul>\n{{#payload}}\n  <li>{{date}} : {{Humedad}}%, </li>\n{{/payload}}\n </ul>",
         "output": "str",
-        "x": 740,
-        "y": 4480,
+        "x": 820,
+        "y": 4420,
         "wires": [
             [
                 "969b6cfeae657626"
@@ -8944,7 +8945,7 @@
         "z": "eba971ebbb85326f",
         "group": "ecb07c084f7a63f5",
         "name": "Registro de Temperaturas superiores al UMBRAL",
-        "order": 32,
+        "order": 30,
         "width": 16,
         "height": 4,
         "format": "<div ng-bind-html=\"msg.payload\"></div>",
@@ -8953,7 +8954,7 @@
         "resendOnRefresh": false,
         "templateScope": "local",
         "className": "",
-        "x": 1210,
+        "x": 1190,
         "y": 4420,
         "wires": [
             []
@@ -8964,7 +8965,7 @@
         "type": "ui_text",
         "z": "eba971ebbb85326f",
         "group": "ecb07c084f7a63f5",
-        "order": 22,
+        "order": 23,
         "width": 0,
         "height": 0,
         "name": "",
@@ -8972,8 +8973,8 @@
         "format": "{{msg.payload}} ºC",
         "layout": "row-spread",
         "className": "",
-        "x": 580,
-        "y": 4580,
+        "x": 460,
+        "y": 4520,
         "wires": []
     },
     {
@@ -8981,7 +8982,7 @@
         "type": "ui_text",
         "z": "eba971ebbb85326f",
         "group": "ecb07c084f7a63f5",
-        "order": 31,
+        "order": 29,
         "width": 0,
         "height": 0,
         "name": "",
@@ -8989,8 +8990,8 @@
         "format": "{{msg.payload}} %",
         "layout": "row-spread",
         "className": "",
-        "x": 580,
-        "y": 4820,
+        "x": 460,
+        "y": 4640,
         "wires": []
     },
     {
@@ -9006,8 +9007,8 @@
         "format": "{{msg.payload}} ºC",
         "layout": "row-spread",
         "className": "",
-        "x": 580,
-        "y": 4660,
+        "x": 460,
+        "y": 4560,
         "wires": []
     },
     {
@@ -9015,7 +9016,7 @@
         "type": "ui_text",
         "z": "eba971ebbb85326f",
         "group": "ecb07c084f7a63f5",
-        "order": 28,
+        "order": 27,
         "width": 0,
         "height": 0,
         "name": "",
@@ -9023,8 +9024,8 @@
         "format": "{{msg.payload}} %",
         "layout": "row-spread",
         "className": "",
-        "x": 580,
-        "y": 4740,
+        "x": 460,
+        "y": 4600,
         "wires": []
     },
     {
@@ -9038,29 +9039,13 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 380,
-        "y": 4580,
+        "x": 260,
+        "y": 4520,
         "wires": [
             [
                 "a8667c18cccf9397"
             ]
         ]
-    },
-    {
-        "id": "cb0eaec840e0a40e",
-        "type": "debug",
-        "z": "eba971ebbb85326f",
-        "name": "",
-        "active": true,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "false",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 880,
-        "y": 4600,
-        "wires": []
     },
     {
         "id": "37a3ca531045baed",
@@ -9073,8 +9058,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 380,
-        "y": 4660,
+        "x": 260,
+        "y": 4560,
         "wires": [
             [
                 "0238673c2a4279e0"
@@ -9092,8 +9077,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 380,
-        "y": 4740,
+        "x": 260,
+        "y": 4600,
         "wires": [
             [
                 "bfb60d6d1dfadc5b"
@@ -9111,11 +9096,134 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 380,
-        "y": 4820,
+        "x": 260,
+        "y": 4640,
         "wires": [
             [
                 "5f1831c72e9afc08"
+            ]
+        ]
+    },
+    {
+        "id": "c5f4175937e63f76",
+        "type": "function",
+        "z": "eba971ebbb85326f",
+        "name": "genera datos grÃ¡fica",
+        "func": "var arrayavg=[];\nvar arraymax=[];\nvar arraymin=[];\n\n// los arrays usados en la represenstaciÃ³n grÃ¡fica deben contener objetos JSON con dos campos: {x , y}\n// en x debemos poner la hora en formato \"timestamp\". Si tenemos un objeto fecha se puede convertir usando el mÃ©todo getTime()\n// en y debemos poner el valor de la variable\n// mas info en: https://github.com/node-red/node-red-dashboard/blob/master/Charts.md\n\nif(Array.isArray(msg.payload) && msg.payload.length>0)\n{\n    for (var i = 0; i < msg.payload.length; i++) { // aÃ±ade datos a los array\n        arrayavg.push({x : msg.payload[i]._id.getTime() , y : msg.payload[i].Tmedia});\n        arraymax.push({x : msg.payload[i]._id.getTime() , y : msg.payload[i].Tmax});\n        arraymin.push({x : msg.payload[i]._id.getTime() , y : msg.payload[i].Tmin});\n    }\n}\n    \nmsg.payload = [{\n        \"series\":[\"T.media\",\"T.max\",\"T.min\"],\n        \"data\":[arrayavg, arraymax, arraymin],\n        \"labels\":[\"\"]\n        }];\n\nreturn msg;  ",
+        "outputs": "1",
+        "noerr": 0,
+        "x": 920,
+        "y": 3840,
+        "wires": [
+            [
+                "a58b9623e4d282ad"
+            ]
+        ]
+    },
+    {
+        "id": "a58b9623e4d282ad",
+        "type": "ui_chart",
+        "z": "eba971ebbb85326f",
+        "name": "",
+        "group": "058e7d7f4fc0028c",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "label": "Temperaturas diarias",
+        "chartType": "line",
+        "legend": "true",
+        "xformat": "D/M",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "",
+        "ymax": "",
+        "removeOlder": 1,
+        "removeOlderPoints": "",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#008000",
+            "#ff0000",
+            "#0080ff",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "outputs": 1,
+        "useDifferentColor": false,
+        "className": "",
+        "x": 1140,
+        "y": 3840,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "5f4a72e207ab57c5",
+        "type": "ui_chart",
+        "z": "eba971ebbb85326f",
+        "name": "",
+        "group": "058e7d7f4fc0028c",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "label": "Humedad diaria",
+        "chartType": "line",
+        "legend": "true",
+        "xformat": "D/M",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "",
+        "ymax": "",
+        "removeOlder": 1,
+        "removeOlderPoints": "",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#008000",
+            "#ff0000",
+            "#0080ff",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "outputs": 1,
+        "useDifferentColor": false,
+        "className": "",
+        "x": 1130,
+        "y": 3900,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "0f45629a16172cb6",
+        "type": "function",
+        "z": "eba971ebbb85326f",
+        "name": "genera datos grÃ¡fica",
+        "func": "var arrayavg=[];\nvar arraymax=[];\nvar arraymin=[];\n\n// los arrays usados en la represenstaciÃ³n grÃ¡fica deben contener objetos JSON con dos campos: {x , y}\n// en x debemos poner la hora en formato \"timestamp\". Si tenemos un objeto fecha se puede convertir usando el mÃ©todo getTime()\n// en y debemos poner el valor de la variable\n// mas info en: https://github.com/node-red/node-red-dashboard/blob/master/Charts.md\n\nif(Array.isArray(msg.payload) && msg.payload.length>0)\n{\n    for (var i = 0; i < msg.payload.length; i++) { // aÃ±ade datos a los array\n        arrayavg.push({x : msg.payload[i]._id.getTime() , y : msg.payload[i].Hmedia});\n        arraymax.push({x : msg.payload[i]._id.getTime() , y : msg.payload[i].Hmax});\n        arraymin.push({x : msg.payload[i]._id.getTime() , y : msg.payload[i].Hmin});\n    }\n}\n    \nmsg.payload = [{\n        \"series\":[\"H.media\",\"H.max\",\"H.min\"],\n        \"data\":[arrayavg, arraymax, arraymin],\n        \"labels\":[\"\"]\n        }];\n\nreturn msg;  ",
+        "outputs": "1",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 920,
+        "y": 3900,
+        "wires": [
+            [
+                "5f4a72e207ab57c5"
             ]
         ]
     },
@@ -9250,7 +9358,7 @@
         "height": 1
     },
     {
-        "id": "efe787a4271d04d6",
+        "id": "40777f38723e2c69",
         "type": "ui_spacer",
         "z": "eba971ebbb85326f",
         "name": "spacer",
@@ -9260,7 +9368,7 @@
         "height": 1
     },
     {
-        "id": "0d94a14bef6f7ec9",
+        "id": "7af9d27ac913b28e",
         "type": "ui_spacer",
         "z": "eba971ebbb85326f",
         "name": "spacer",
@@ -9270,7 +9378,7 @@
         "height": 1
     },
     {
-        "id": "626833f26125d236",
+        "id": "d653355624bce115",
         "type": "ui_spacer",
         "z": "eba971ebbb85326f",
         "name": "spacer",
@@ -9280,7 +9388,7 @@
         "height": 1
     },
     {
-        "id": "9e80bfce2ae16135",
+        "id": "317f276de36b1b51",
         "type": "ui_spacer",
         "z": "eba971ebbb85326f",
         "name": "spacer",
@@ -9290,7 +9398,7 @@
         "height": 1
     },
     {
-        "id": "d28d01d6bad51a15",
+        "id": "de6fdd62569fc556",
         "type": "ui_spacer",
         "z": "eba971ebbb85326f",
         "name": "spacer",
@@ -9300,7 +9408,7 @@
         "height": 1
     },
     {
-        "id": "77d6f51cce780eb0",
+        "id": "9a058cd9eb7f3917",
         "type": "ui_spacer",
         "z": "eba971ebbb85326f",
         "name": "spacer",
@@ -9310,7 +9418,7 @@
         "height": 1
     },
     {
-        "id": "4dbecb2265d85753",
+        "id": "d1c37720a1b66c20",
         "type": "ui_spacer",
         "z": "eba971ebbb85326f",
         "name": "spacer",
@@ -9320,7 +9428,7 @@
         "height": 1
     },
     {
-        "id": "8e1d6614c48e3aeb",
+        "id": "61d13a3efb5a9127",
         "type": "ui_spacer",
         "z": "eba971ebbb85326f",
         "name": "spacer",
@@ -9330,7 +9438,7 @@
         "height": 1
     },
     {
-        "id": "bcffcbc8dc0dfd05",
+        "id": "e9e5b4f2bac38b86",
         "type": "ui_spacer",
         "z": "eba971ebbb85326f",
         "name": "spacer",
@@ -9340,17 +9448,7 @@
         "height": 1
     },
     {
-        "id": "40c579e6df701235",
-        "type": "ui_spacer",
-        "z": "eba971ebbb85326f",
-        "name": "spacer",
-        "group": "ecb07c084f7a63f5",
-        "order": 27,
-        "width": 1,
-        "height": 1
-    },
-    {
-        "id": "725d4c2a6c96f203",
+        "id": "e5a22df697f5b97c",
         "type": "ui_spacer",
         "z": "eba971ebbb85326f",
         "name": "spacer",
@@ -9360,72 +9458,62 @@
         "height": 1
     },
     {
-        "id": "36609086109a2fab",
+        "id": "704cce87065883bc",
         "type": "ui_spacer",
         "z": "eba971ebbb85326f",
         "name": "spacer",
         "group": "ecb07c084f7a63f5",
         "order": 13,
-        "width": 4,
+        "width": 1,
         "height": 1
     },
     {
-        "id": "7bde2780f8f0d6e2",
+        "id": "69bb8e93b76fa1e4",
         "type": "ui_spacer",
         "z": "eba971ebbb85326f",
         "name": "spacer",
         "group": "ecb07c084f7a63f5",
         "order": 14,
-        "width": 1,
+        "width": 4,
         "height": 1
     },
     {
-        "id": "91f535fb700d4a1a",
+        "id": "b8a9efef91bcee5a",
         "type": "ui_spacer",
         "z": "eba971ebbb85326f",
         "name": "spacer",
         "group": "ecb07c084f7a63f5",
         "order": 15,
-        "width": 16,
+        "width": 1,
         "height": 1
     },
     {
-        "id": "d848097d2ea82119",
+        "id": "3d2acccbd155df63",
         "type": "ui_spacer",
         "z": "eba971ebbb85326f",
         "name": "spacer",
         "group": "ecb07c084f7a63f5",
-        "order": 18,
+        "order": 16,
         "width": 16,
         "height": 1
     },
     {
-        "id": "335c3e42a1034b18",
+        "id": "c686fb2a949fd0cb",
         "type": "ui_spacer",
         "z": "eba971ebbb85326f",
         "name": "spacer",
         "group": "ecb07c084f7a63f5",
-        "order": 30,
+        "order": 19,
         "width": 16,
         "height": 1
     },
     {
-        "id": "db8789291ef7d0ea",
+        "id": "dcf63881dc94d780",
         "type": "ui_spacer",
         "z": "eba971ebbb85326f",
         "name": "spacer",
         "group": "ecb07c084f7a63f5",
-        "order": 21,
-        "width": 16,
-        "height": 1
-    },
-    {
-        "id": "1c568df37b62c584",
-        "type": "ui_spacer",
-        "z": "eba971ebbb85326f",
-        "name": "spacer",
-        "group": "ecb07c084f7a63f5",
-        "order": 24,
+        "order": 22,
         "width": 16,
         "height": 1
     },
@@ -9693,6 +9781,17 @@
         "order": 2,
         "disp": true,
         "width": 16,
+        "collapse": false,
+        "className": ""
+    },
+    {
+        "id": "058e7d7f4fc0028c",
+        "type": "ui_group",
+        "name": "Gráficas",
+        "tab": "92435d94205c6cc8",
+        "order": 3,
+        "disp": true,
+        "width": 13,
         "collapse": false,
         "className": ""
     },
