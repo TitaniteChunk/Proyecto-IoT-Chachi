@@ -338,7 +338,7 @@ void setup() {
 //·····················································  
 // CREACIÓN DE TOPICS
 
-  sprintf(CHIP_ID, "ESP_%d", ESP.getChipId());
+  sprintf(CHIP_ID, "ESP%d", ESP.getChipId());
 
   sprintf(topic_P_conexion, "II%s/ESP%d/conexion", GRUPO, ESP.getChipId());
   sprintf(topic_P_datos, "II%s/ESP%d/datos", GRUPO, ESP.getChipId());
