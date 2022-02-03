@@ -24,8 +24,8 @@ ADC_MODE(ADC_VCC)
 
 // VARIABLES GLOBALES PARA CONFIGURAR WIFI
 
-const char* ssid = "MiFibra-5D8B";
-const char* password = "baYxK3N7";
+const char* ssid = "MOVISTAR_BC6F";
+const char* password = "F5A1C04240EE5F6E94F6";
 const char* mqtt_server = "iot.ac.uma.es";
 const char* mqtt_user = "II1";
 const char* mqtt_pass = "7o56oYsu";
